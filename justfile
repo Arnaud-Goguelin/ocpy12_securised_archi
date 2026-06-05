@@ -32,7 +32,7 @@ up:
 # GIT
 # ==============================================
 
-# Pull latest changes from the develop branch
-pull_develop:
-    git checkout develop
-    git pull origin develop
+# Pull latest changes from the main branch
+pull_main:
+    git checkout main
+    git pull origin main
