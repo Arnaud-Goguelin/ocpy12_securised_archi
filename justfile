@@ -1,4 +1,7 @@
-# Justfile for cee-simulator-backend
+# Justfile for crm_epic_events
+
+# Windows shell fix
+set shell := ["cmd", "/c"]
 
 # List all available commands
 default:
@@ -26,7 +29,7 @@ check: lint format
 
 # Build and start Docker containers
 up:
-    sudo docker compose up --build
+    docker compose -f docker/compose.local.yml up
 
 # ==============================================
 # GIT
