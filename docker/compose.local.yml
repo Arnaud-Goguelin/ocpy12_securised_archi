@@ -23,8 +23,8 @@ services:
       DB_HOST: crm-db
       DB_PORT: 5432
       DB_NAME: crm_app
-      DB_USER: docker_crm_app_user
-      DB_PASSWORD: crm_db_password
+      POSTGRES_USER: docker_crm_db_user
+      POSTGRES_PASSWORD: crm_db_password
     depends_on:
       crm-db:
         condition: service_healthy
