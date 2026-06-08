@@ -1,4 +1,5 @@
 import uuid
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, Uuid
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
 from crm_epic_events.utils.constants import Roles
+
 
 if TYPE_CHECKING:
     from crm_epic_events.models.customer import Customer

@@ -35,7 +35,7 @@ class Customer(Base):
         Uuid,
         ForeignKey(
             "users.id",
-            ondelete="RESTRICT", # it is forbidden to delete a User if it has linked Customers
+            ondelete="RESTRICT",  # it is forbidden to delete a User if it has linked Customers
         ),
     )
     salesperson: Mapped["User"] = relationship(
