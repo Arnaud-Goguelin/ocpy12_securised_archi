@@ -28,3 +28,7 @@ epic_events/
 │   ├── config.py
 │   └── constants.py
 └── main.py
+
+ToDo: could be good to use Pydantic to validate inputs between controllers and services, could also be used to return
+ clean response from an object in DB and could allow to validate multiple fields at once (e.g. in contract:
+ total_amount and remaining_amount are linked and remaining_amount must not be > to total_amount)
