@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Uuid, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
@@ -66,7 +66,6 @@ class Contract(Base):
     )
     customer: Mapped["Customer"] = relationship(
         "Customer",
-
         back_populates="contracts",
         passive_deletes=True,
     )
