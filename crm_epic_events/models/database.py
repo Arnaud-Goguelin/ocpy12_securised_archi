@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, declarative_base
 
 from crm_epic_events.utils.config import Config
 
@@ -26,8 +26,7 @@ async_session = async_sessionmaker(
 )
 
 
-class Base(DeclarativeBase):
-    pass
+Base = declarative_base()
 
 
 async def get_db():
