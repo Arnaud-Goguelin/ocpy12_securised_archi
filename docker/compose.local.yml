@@ -19,6 +19,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    entrypoint: /bin/sh
+    command: -c "sleep infinity"
     environment:
       DB_HOST: crm-db
       DB_PORT: 5432
@@ -30,6 +32,10 @@ services:
         condition: service_healthy
     stdin_open: true
     tty: true
+    volumes:
+      - source: "../"
+        target: /usr/src/app
+        type: bind
 
 volumes:
   crm-db-data:
