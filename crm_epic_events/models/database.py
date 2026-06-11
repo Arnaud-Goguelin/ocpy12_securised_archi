@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, declarative_base
+from sqlalchemy.orm import declarative_base
 
 from crm_epic_events.utils.config import Config
 
