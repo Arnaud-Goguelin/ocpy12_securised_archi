@@ -29,7 +29,11 @@ check: lint format
 
 # Build and start Docker containers
 up:
-    docker compose -f docker/compose.local.yml up
+    docker compose -f docker/compose.local.yml up -d
+
+# Execute a command in a container
+exec *args='':
+    docker compose -f docker/compose.local.yml exec crm-app $@
 
 # ==============================================
 # GIT
