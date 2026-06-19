@@ -47,7 +47,7 @@ exclude = [
     "old",
     "__init__.py",
     "*.pyc",
-    "*/migrations/",
+    "./migrations/",
     "*/settings/*"
 ]
 
