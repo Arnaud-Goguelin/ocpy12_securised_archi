@@ -1,6 +1,6 @@
 services:
   crm-db:
-    container_name: crm-db
+    container_name: crm_db
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: crm_db
@@ -15,18 +15,19 @@ services:
       retries: 5
 
   crm-app:
-    container_name: crm-app
+    container_name: crm_app
     build:
       context: ..
       dockerfile: docker/Dockerfile
     entrypoint: /bin/sh
     command: -c "sleep infinity"
     environment:
-      DB_HOST: crm-db
+      DB_HOST: crm_db
       DB_PORT: 5432
-      DB_NAME: crm-db
+      DB_NAME: crm_db
       POSTGRES_USER: docker_crm_db_user
       POSTGRES_PASSWORD: crm_db_password
+      UV_CACHE_DIR: /tmp/uv-cache
     depends_on:
       crm-db:
         condition: service_healthy
@@ -36,6 +37,8 @@ services:
       - source: "../"
         target: /usr/src/app
         type: bind
+      - crm-app-venv:/usr/src/app/.venv
 
 volumes:
   crm-db-data:
+  crm-app-venv:
