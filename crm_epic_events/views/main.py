@@ -1,4 +1,5 @@
-from crm_epic_events.utils import print_title, print_option, prompt, print_error
+from crm_epic_events.utils import print_error, print_option, print_title, prompt
+
 
 class MainMenuView:
     """

@@ -1,5 +1,6 @@
-from crm_epic_events.views import MainMenuView
 from crm_epic_events.utils import GenericMessages
+from crm_epic_events.views import MainMenuView
+
 
 class MainController:
     """Main controller class to handle the main menu and its actions."""
