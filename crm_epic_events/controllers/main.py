@@ -1,4 +1,4 @@
-from crm_epic_events.utils import GenericMessages
+from crm_epic_events.utils import GenericMessages, StandardInputs
 from crm_epic_events.views import MainMenuView
 
 
@@ -8,15 +8,19 @@ class MainController:
     def __init__(self):
         self.view = MainMenuView()
         # self.menu_actions = {
-        #     "1": self.handle_player_menu,
-        #     "2": self.handle_tournament_menu,
-        #     CANCELLED_INPUT: self.exit_app,
+        #     "1": self.handle_contracts_menu,
+        #     "2": self.handle_customers_menu,
+        #     "3": self.handle_events_menu,
+        #     StandardInputs.CANCELLED: self.exit_app,
         # }
 
     def handle_main_menu(self):
         """
         """
+        # Todo: keep while true logic ?
         while True:
+
+            #Todo: first check if user is auth, else display login screen
 
             choice = self.view.display()
             # action = self.menu_actions.get(choice)
