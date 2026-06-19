@@ -1,5 +1,10 @@
+[project.scripts]
+crm = "crm_epic_events.__main__:main"
+#===========================
 [tool.uv]
-package = false
+package = true
+[tool.setuptools.packages.find]
+include = ["crm_epic_events*"]
 #===========================
 [project]
 name = "crm_epc_events"
@@ -16,6 +21,7 @@ dependencies = [
     "python-dotenv ~= 1.2.2",
     "psycopg ~= 3.3.4",
     "psycopg[binary,pool] ~= 3.3.4",
+    "colorama>=0.4.6",
 ]
 readme = "README.md"
 #===========================
