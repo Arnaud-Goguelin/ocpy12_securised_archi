@@ -6,3 +6,9 @@ class Roles(StrEnum):
     MANAGER = "manager"
     SUPPORT = "support"
     SALES = "sales"
+
+
+class GenericMessages(StrEnum):
+    INVALID_INPUT = "Invalid input. Please try again."
+    INVALID_CHOICE = "Invalid choice. Please try again."
+    EXIT = "Exiting the program."
