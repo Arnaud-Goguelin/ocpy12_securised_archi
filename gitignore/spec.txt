@@ -1,0 +1,125 @@
+Cahier des charges
+Contexte
+Epic Events est une entreprise qui organise des événements (fêtes,
+réunions professionnelles, manifestations hors les murs) pour ses clients.
+Nous souhaitons développer un logiciel CRM (Customer Relationship
+Management) pour améliorer notre travail.
+Le logiciel CRM permet de collecter et de traiter les données des clients
+et de leurs événements, tout en facilitant la communication entre les
+différents pôles de l'entreprise.
+Comment Epic Events fonctionne
+Nos équipes opérationnelles sont divisées en trois départements :
+● le département commercial ;
+● le département support ;
+● le département gestion.
+Les commerciaux démarchent les clients. Ils créent et mettent à jour
+leurs profils sur la plateforme. Lorsqu’un client souhaite organiser un
+événement, un collaborateur du département gestion crée un contrat et
+l’associe au client.
+Une fois le contrat signé, le commercial crée l’événement dans la
+plateforme et le département gestion désigne un membre du
+département support qui sera responsable de l’organisation et du
+déroulé de l’événement.
+Exigences techniques et de sécurité
+● Vous devrez utiliser Python 3 (la version 3.9 ou une version plus
+récente).
+● L’application sera faite en ligne de commande.
+● Vous devrez empêcher les injections SQL.
+● Vous devrez mettre en oeuvre et faire appliquer le principe du
+moindre privilège lors de l'attribution de l'accès aux données.
+Veillez à ce que les utilisateurs n'aient accès qu'aux données dont
+ils ont besoin.
+● Une journalisation utile et efficace sera mise en place avec Sentry :
+les applications doivent consigner les exceptions et les erreurs
+produites.
+Estimation de livraison
+L’application CRM doit être livrée dans deux mois.
+Les clients
+Un client est identifié par les informations suivantes :
+Information Exemple
+Nom complet Kevin Casey
+Email kevin@startup.io
+Téléphone +678 123 456 78
+Nom de l’entreprise Cool Startup LLC
+Date de création
+(= premier contact)
+18 avril 2021
+Dernière mise à jour/contact 29 mars 2023
+Contact commercial chez Epic Events Bill Boquet
+Les contrats
+Un contrat contient :
+● un identifiant unique ;
+● les informations sur le client ;
+● le contact commercial pour le contrat (= le commercial associé au
+client) ;
+● le montant total du contrat ;
+● le montant restant à payer ;
+● la date de création du contrat ;
+● le statut du contrat (= si le contrat a été signé).
+Les événements
+À l’heure actuelle, le département support utilise une feuille Excel pour
+suivre les événements. Voici deux exemples d’événements :
+A B
+1 John Ouick Wedding
+2 Event ID 109
+3 Contract ID 652
+4 Client name John Ouick
+5
+Client contact john.ouick@gmail.com
++1 234 567 8901
+6 Event date start 4 Jun 2023 @ 1PM
+7 Event date end 5 Jun 2023 @ 2AM
+8 Support contact Kate Hastroff
+9 Location 53 Rue du Château, 41120 Candé-sur-Beuvron, France
+10 Attendees 75
+11
+Notes Wedding starts at 3PM, by the river.
+Catering is organized, reception starts at 5PM.
+Kate needs to organize the DJ for after party.
+A B
+1 Lou Bouzin General Assembly
+2 Event ID 1023
+3 Contract ID 412
+4 Client name Lou Bouzin
+5
+Client contact Jacky Blangier
+jacky@loubouzin.grd
++ 666 12345
+6 Event date start 5 May 2023 @ 3PM
+7 Event date end 5 May 2023 @ 5PM
+8 Support contact Aliénor Vichum
+9 Location Salle des fêtes de Mufflins
+10 Attendees 200
+11 Notes Assemblée générale des actionnaires (~200 personnes).
+Besoins et fonctionnalités
+Besoins généraux
+● Chaque collaborateur doit avoir ses identifiants pour utiliser la
+plateforme.
+● Chaque collaborateur est associé à un rôle (suivant son
+département).
+● La plateforme doit permettre de stocker et de mettre à jour les
+informations sur les clients, les contrats et les événements.
+● Tous les collaborateurs doivent pouvoir accéder à tous les clients,
+contrats et événements en lecture seule.
+Besoins individuels : équipe de gestion
+● Créer, mettre à jour et supprimer des collaborateurs dans le
+système CRM.
+● Créer et modifier tous les contrats.
+● Filtrer l’affichage des événements, par exemple : afficher tous les
+événements qui n’ont pas de « support » associé.
+● Modifier des événements (pour associer un collaborateur support à
+l’événement).
+Besoins individuels : équipe commerciale
+● Créer des clients (le client leur sera automatiquement associé).
+● Mettre à jour les clients dont ils sont responsables.
+● Modifier/mettre à jour les contrats des clients dont ils sont
+responsables.
+● Filtrer l’affichage des contrats, par exemple : afficher tous les
+contrats qui ne sont pas encore signés, ou qui ne sont pas encore
+entièrement payés.
+● Créer un événement pour un de leurs clients qui a signé un
+contrat.
+Besoins individuels : équipe support
+● Filtrer l’affichage des événements, par exemple : afficher
+uniquement les événements qui leur sont attribués.
+● Mettre à jour les événements dont ils sont responsables.
