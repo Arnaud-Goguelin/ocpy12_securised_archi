@@ -32,6 +32,9 @@ RUN adduser --system --no-create-home nonroot
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 COPY --from=build-stage /usr/src/app/.venv /usr/src/app/.venv
 
+# Fix ownership so nonroot can write to .venv
+RUN chown -R nonroot:nobody /usr/src/app/.venv
+
 # Set PATH to use the virtual environment
 ENV PATH="/usr/src/app/.venv/bin:$PATH"
 
