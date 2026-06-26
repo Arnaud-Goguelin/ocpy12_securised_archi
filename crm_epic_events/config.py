@@ -7,6 +7,8 @@ load_dotenv(dotenv_path=".env")
 
 
 class Config:
+    APP_ENV = os.getenv("APP_ENV")
+
     # database configs
     POSTGRES_USER = os.getenv("POSTGRES_USER")
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
@@ -18,5 +20,5 @@ class Config:
     # auth config
     SECRET_KEY = os.getenv("SECRET_KEY")
     AUTH_ALGORITHM = os.getenv("AUTH_ALGORITHM")
-    ACCESS_TOKEN_LIFETIME = os.getenv("ACCESS_TOKEN_LIFETIME")
-    REFRESH_TOKEN_LIFETIME = os.getenv("REFRESH_TOKEN_LIFETIME")
+    ACCESS_TOKEN_LIFETIME = int(os.getenv("ACCESS_TOKEN_LIFETIME"))
+    REFRESH_TOKEN_LIFETIME = int(os.getenv("REFRESH_TOKEN_LIFETIME"))
