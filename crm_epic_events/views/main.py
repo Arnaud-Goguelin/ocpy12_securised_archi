@@ -1,4 +1,4 @@
-from crm_epic_events.utils import print_error, print_option, print_title, prompt
+from crm_epic_events.utils import MenuItem, print_option, print_title, prompt
 
 
 class MainMenuView:
@@ -6,23 +6,10 @@ class MainMenuView:
     Represents the main menu view for the epic events crm.
     """
 
-    MENU_OPTIONS = [
-        ("1", "Customers  👥"),
-        ("2", "Contracts  📄"),
-        ("3", "Events     📅"),
-        ("Q", "Quit"),
-        ]
-
     @staticmethod
-    def display() -> str:
+    def display(menu_items: list[MenuItem]) -> str:
         print_title("📖  Epic Events CRM  📖")
-
-        for key, label in MainMenuView.MENU_OPTIONS:
-            print_option(key, label)
-
+        for item in menu_items:
+            print_option(item.key, item.label)
         print()
         return prompt("Choose an option").strip().upper()
-
-    @staticmethod
-    def display_invalid_choice(choice: str) -> None:
-        print_error(f"Invalid choice: {choice}")
