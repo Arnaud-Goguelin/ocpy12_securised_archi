@@ -22,7 +22,9 @@ dependencies = [
     "psycopg ~= 3.3.4",
     "psycopg[binary,pool] ~= 3.3.4",
     "colorama~=0.4.6",
-    "python-dotenv~=1.2.2"
+    "python-dotenv~=1.2.2",
+    "pyjwt~=2.13.0",
+    "bcrypt~=5.0.0"
 ]
 readme = "README.md"
 #===========================
