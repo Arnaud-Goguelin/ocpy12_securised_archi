@@ -41,4 +41,6 @@ ENV PATH="/usr/src/app/.venv/bin:$PATH"
 # Copy the application code
 COPY . .
 
+RUN chown -R nonroot:nobody /usr/src/app
+
 USER nonroot

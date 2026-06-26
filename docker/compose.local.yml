@@ -28,6 +28,7 @@ services:
       POSTGRES_USER: docker_crm_db_user
       POSTGRES_PASSWORD: crm_db_password
       UV_CACHE_DIR: /tmp/uv-cache
+      APP_ENV: local
     depends_on:
       crm-db:
         condition: service_healthy

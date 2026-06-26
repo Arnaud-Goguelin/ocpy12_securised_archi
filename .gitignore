@@ -212,3 +212,4 @@ TODO
 ToDo.txt
 requests.http
 gitignore/
+.session.json
