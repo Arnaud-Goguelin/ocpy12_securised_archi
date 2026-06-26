@@ -1,5 +1,8 @@
 from colorama import Fore, Style
 
+from .constants import GenericMessages
+from .countdown import countdown
+
 
 def colored(text: str, color: str) -> str:
     """Wraps text with a colorama color and resets after."""
@@ -21,6 +24,12 @@ def print_info(text: str) -> None:
 
 def print_error(text: str) -> None:
     print(colored(text, Fore.RED))
+
+
+def print_unexpected_error(error: str, generic_messages: GenericMessages) -> None:
+    print(colored("An error occurred:", Fore.RED))
+    print(error)
+    countdown(generic_messages)
 
 
 def print_success(text: str) -> None:
