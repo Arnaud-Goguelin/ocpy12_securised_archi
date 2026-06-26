@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 import bcrypt
 
-from jwt import ExpiredSignatureError, InvalidTokenError, decode, encode
+from jwt import ExpiredSignatureError, decode, encode
+from jwt import InvalidTokenError as JWTInvalidTokenError
 from sqlalchemy.orm.exc import NoResultFound
 
 from crm_epic_events.config import Config
@@ -132,7 +133,7 @@ class AuthService:
             return User.get_by_id(payload["id"], db)
         except ExpiredSignatureError:
             return cls._refresh(tokens, db)
-        except InvalidTokenError:
+        except JWTInvalidTokenError:
             raise CustomInvalidTokenError() from None
 
     @staticmethod
@@ -150,6 +151,6 @@ class AuthService:
             new_access_token = AuthTokensService.generate_access_token(user)
             AuthTokensService.save_tokens(new_access_token, tokens["refresh_token"])
             return user
-        except (ExpiredSignatureError, CustomInvalidTokenError):
+        except (ExpiredSignatureError, JWTInvalidTokenError):
             AuthTokensService.clear_tokens()
             return None
