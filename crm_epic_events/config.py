@@ -14,3 +14,9 @@ class Config:
     DB_PORT = os.getenv("DB_PORT")
     DB_NAME = os.getenv("DB_NAME")
     SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+    # auth config
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    AUTH_ALGORITHM = os.getenv("AUTH_ALGORITHM")
+    ACCESS_TOKEN_LIFETIME = os.getenv("ACCESS_TOKEN_LIFETIME")
+    REFRESH_TOKEN_LIFETIME = os.getenv("REFRESH_TOKEN_LIFETIME")
