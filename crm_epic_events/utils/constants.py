@@ -1,7 +1,7 @@
-from enum import StrEnum
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum, StrEnum, auto
 
-
-CANCELLED_INPUT = "Q"
 
 class Roles(StrEnum):
     # in a more commune way, MANAGER = ADMIN, this role is called MANAGER to match with specifications
@@ -11,11 +11,24 @@ class Roles(StrEnum):
 
 
 class GenericMessages(StrEnum):
-    INVALID_INPUT = "Invalid input. Please try again."
-    INVALID_CHOICE = "Invalid choice. Please try again."
     EXIT = "Exiting the program."
+    MAIN_MENU_RETURN = "Go back to Main menu in ... "
+
 
 class StandardInputs(StrEnum):
     CANCELLED = "Q"
     NEGATION = "N"
     VALIDATION = "Y"
+
+
+class NavSignal(Enum):
+    STAY = auto()
+    BACK = auto()
+    EXIT = auto()
+
+
+@dataclass
+class MenuItem:
+    key: str
+    label: str
+    action: Callable
