@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from crm_epic_events.models import Base
-from crm_epic_events.utils import Config
+from crm_epic_events.config import Config
 
 
 # this is the Alembic Config object, which provides
