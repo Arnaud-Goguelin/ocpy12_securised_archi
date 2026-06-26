@@ -2,8 +2,8 @@ import uuid
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Uuid, select
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
 from crm_epic_events.utils.constants import Roles
@@ -86,3 +86,15 @@ class User(Base):
     role: Mapped[Roles] = mapped_column()
     first_name: Mapped[str] = mapped_column(String)
     last_name: Mapped[str] = mapped_column(String)
+
+    @classmethod
+    def get_by_email(cls, _email: str, db: Session) -> "User":
+        query = select(cls).filter_by(email=_email)
+        result = db.execute(query)
+        return result.scalar_one()
+
+    @classmethod
+    def get_by_id(cls, _id: uuid.UUID, db: Session) -> "User":
+        query = select(cls).filter_by(id=_id)
+        result = db.execute(query)
+        return result.scalar_one()
