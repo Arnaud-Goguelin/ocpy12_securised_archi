@@ -1,15 +1,26 @@
+import traceback
+
 from crm_epic_events.controllers import MainController
-from crm_epic_events.utils import GenericMessages, print_unexpected_error
+from crm_epic_events.models.database import get_db
+
+# from crm_epic_events.models.start_tasks import setup_database
+from crm_epic_events.services.authentication.service import AuthService
+from crm_epic_events.utils import GenericMessages, print_info, print_unexpected_error
 
 
 class Application:
     def __init__(self):
-
-        self.controller = MainController()
+        self.db = get_db()
+        self.user = AuthService.get_current_user(self.db)
+        self.controller = MainController(self.db, self.user)
 
     def run(self):
+        # setup_database()
         try:
             self.controller.handle_main_menu()
         except Exception as error:
             print_unexpected_error(str(error), GenericMessages.MAIN_MENU_RETURN)
+            print_info(traceback.format_exc())
             self.controller.handle_main_menu()
+        finally:
+            self.db.close()
