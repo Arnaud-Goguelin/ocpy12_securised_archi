@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, StrEnum, auto
 
 
@@ -11,6 +11,16 @@ class Roles(StrEnum):
 
 
 class Permissions(list[Roles], Enum):
+    """
+    Defines the Permissions class to manage roles access control for various
+    system actions.
+
+    Here is the architecture logic:
+    Member: action on an object = Value: list of roles allowed to perform the action
+
+    Ownership checks is NOT included in the permissions.
+    """
+
     # Reminder from specifications: all roles can read all objects
 
     # --- Users ---
@@ -20,17 +30,17 @@ class Permissions(list[Roles], Enum):
 
     # --- Customers ---
     CUSTOMER_CREATE = [Roles.SALES]
-    CUSTOMER_UPDATE = [Roles.MANAGER, Roles.SALES]  # SALES: only their own customers (ownership check)
+    CUSTOMER_UPDATE = [Roles.MANAGER, Roles.SALES]  # SALES: ownership check needed
     CUSTOMER_DELETE = [Roles.MANAGER]
 
     # --- Contracts ---
     CONTRACT_CREATE = [Roles.MANAGER]
-    CONTRACT_UPDATE = [Roles.MANAGER, Roles.SALES]  # SALES: only contracts of their own customers (ownership check)
+    CONTRACT_UPDATE = [Roles.MANAGER, Roles.SALES]  # SALES: ownership check needed
     CONTRACT_DELETE = [Roles.MANAGER]
 
     # --- Events ---
-    EVENT_CREATE = [Roles.SALES]  # SALES: only for their customers with a signed contract (ownership check)
-    EVENT_UPDATE = [Roles.MANAGER, Roles.SUPPORT]  # SUPPORT: only their own events (ownership check)
+    EVENT_CREATE = [Roles.SALES]  # SALES: ownership check needed
+    EVENT_UPDATE = [Roles.MANAGER, Roles.SUPPORT]  # SUPPORT: ownership check needed
     EVENT_DELETE = [Roles.MANAGER]
 
 
@@ -53,6 +63,16 @@ class NavSignal(Enum):
 
 @dataclass
 class MenuItem:
+    """
+    Represents a menu item for a user interface.
+
+    This class is used to define a single item in a menu, associating it with a
+    unique key, display label, an action to perform when selected, and optional
+    permissions to restrict its visibility to certain roles.
+    """
+
     key: str
     label: str
     action: Callable
+    # default: all Roles are allowed
+    roles_allowed: list[Roles] = field(default_factory=lambda: [*Roles])
