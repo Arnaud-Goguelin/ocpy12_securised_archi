@@ -31,6 +31,10 @@ readme = "README.md"
 [dependency-groups]
 dev = [
     "ruff ~= 0.15.15",
+    "faker>=40.23.0",
+    "factory-boy~=3.3.3",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0"
 ]
 #===========================
 [tool.ruff]
@@ -94,3 +98,7 @@ known-first-party = ["src"]
 force-single-line = false
 lines-between-types = 1
 lines-after-imports = 2
+
+#===========================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
