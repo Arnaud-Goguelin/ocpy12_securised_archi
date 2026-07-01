@@ -35,13 +35,16 @@ def require_ownership(current_user: "User", owner: "User | None") -> Callable:
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+
+            # obviously if owner or current_user are None, we can't check ownership either
+            # controller has the responsibility to check this
+            # (for current_user, it is normally done in main
+            # controller with auth check)
+            if not current_user:
+                return None
             # MANAGER bypasses ownership check
             if current_user.role != Roles.MANAGER:
-                # obviously if owner or current_user are None, we can't check ownership either
-                # controller has the responsibility to check this
-                # (for current_user, it is normally done in main
-                # controller with auth check)
-                if not owner or not current_user:
+                if not owner:
                     return None
                 if owner != current_user:
                     raise UserIsNotOwnerError()
