@@ -8,7 +8,7 @@ class MainMenuView:
 
     @staticmethod
     def display(menu_items: list[MenuItem]) -> str:
-        print_title("📖  Epic Events CRM  📖")
+        print_title("╔═══════════════════╗\n║  Epic Events CRM  ║\n╚═══════════════════╝")
         for item in menu_items:
             print_option(item.key, item.label)
         print()
