@@ -23,12 +23,16 @@ class MainController:
         self.main_view = MainMenuView()
         self.login_view = LoginView()
         self.main_menu_items = [
-            MenuItem("1", "Customers  👥", self.handle_customers_menu),
-            MenuItem("2", "Contracts  📄", self.handle_contracts_menu),
-            MenuItem("3", "Events     📅", self.handle_events_menu),
-            MenuItem("4", "Users      👤", self.handle_users_menu, [Roles.MANAGER]),
+            MenuItem("1", "Customers", self.handle_customers_menu),
+            MenuItem("2", "Contracts", self.handle_contracts_menu),
+            MenuItem("3", "Events", self.handle_events_menu),
+            MenuItem("4", "Users", self.handle_users_menu, [Roles.MANAGER]),
             MenuItem(StandardInputs.CANCELLED, "Quit", self.exit_app),
         ]
+
+    @property
+    def visible_menu_items(self):
+        return [item for item in self.main_menu_items if self.user.role in item.roles_allowed]
 
     def handle_main_menu(self):
         """ """
@@ -39,9 +43,8 @@ class MainController:
                 print_success("Login successful!")
                 continue
 
-            visible_items = [item for item in self.main_menu_items if self.user.role in item.roles_allowed]
-            choice = self.main_view.display(visible_items)
-            item = check_choice(choice, visible_items)
+            choice = self.main_view.display(self.visible_menu_items)
+            item = check_choice(choice, self.visible_menu_items)
             if item is None:
                 continue
             else:
