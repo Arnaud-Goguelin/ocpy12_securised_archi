@@ -1,11 +1,21 @@
 from typing import TYPE_CHECKING
 
+from pydantic import ValidationError
+
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.controllers.user import UserController
 from crm_epic_events.models import User
 from crm_epic_events.services import UserRegisterInput, UserService
 from crm_epic_events.services.authentication.service import AuthService
-from crm_epic_events.utils import MenuItem, StandardInputs, check_choice, exit_app, print_success
+from crm_epic_events.utils import (
+    MenuItem,
+    StandardInputs,
+    check_choice,
+    exit_app,
+    print_error,
+    print_success,
+    print_validation_errors,
+)
 from crm_epic_events.views import LoginView, MainMenuView, UserView
 
 
@@ -60,18 +70,16 @@ class MainController(BaseController):
         print_success("Login successful!")
 
     def handle_register(self):
-        from pydantic import ValidationError
-
-        from crm_epic_events.utils.printers import print_error
-
         raw = self.user_view.prompt_register()
         try:
             data = UserRegisterInput(**raw)
             user = UserService.register(data, self.db)
             print_success(f"Account created for '{user.first_name} {user.last_name}'.")
             print_success("A MANAGER will assign your role. You can now log in.")
-        except (ValueError, ValidationError) as e:
-            print_error(str(e))
+        except ValidationError as error:
+            print_validation_errors(error)
+        except ValueError as error:
+            print_error(str(error))
 
     def handle_customers_menu(self):
         pass

@@ -7,7 +7,7 @@ from crm_epic_events.permissions import require_roles
 from crm_epic_events.services import UserAssignRoleInput, UserService, UserUpdateInput
 from crm_epic_events.utils import check_choice
 from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
-from crm_epic_events.utils.printers import print_error, print_success
+from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import UserView
 
 
@@ -75,7 +75,7 @@ class UserController(BaseController):
             UserService.update_profile(self.user, self.user, data, self.db)
             print_success("Profile updated successfully.")
         except ValidationError as error:
-            print_error(str(error))
+            print_validation_errors(error)
         return NavSignal.STAY
 
     @require_roles(Roles.MANAGER)
@@ -100,7 +100,7 @@ class UserController(BaseController):
             UserService.update_profile(self.user, target, data, self.db)
             print_success("User updated successfully.")
         except ValidationError as error:
-            print_error(str(error))
+            print_validation_errors(error)
         return NavSignal.STAY
 
     @require_roles(Roles.MANAGER)
@@ -120,7 +120,9 @@ class UserController(BaseController):
             data = UserAssignRoleInput(role=role)
             UserService.assign_role(self.user, target, data, self.db)
             print_success(f"Role '{role}' assigned to {target.first_name} {target.last_name}.")
-        except (ValidationError, ValueError) as error:
+        except ValidationError as error:
+            print_validation_errors(error)
+        except ValueError as error:
             print_error(str(error))
         return NavSignal.STAY
 

@@ -1,7 +1,13 @@
+from typing import TYPE_CHECKING
+
 from colorama import Fore, Style
 
 from .constants import GenericMessages
 from .countdown import countdown
+
+
+if TYPE_CHECKING:
+    from pydantic import ValidationError
 
 
 def colored(text: str, color: str) -> str:
@@ -24,6 +30,14 @@ def print_info(text: str) -> None:
 
 def print_error(text: str) -> None:
     print(colored(text, Fore.RED))
+
+
+def print_validation_errors(validation_error: "ValidationError") -> None:
+    """Prints only the human-readable messages from a Pydantic ValidationError."""
+    for error in validation_error.errors():
+        field = error["loc"][0] if error["loc"] else "input"
+        message = error["msg"].replace("Value error, ", "")
+        print_error(f"  {field}: {message}")
 
 
 def print_unexpected_error(error: str, generic_messages: GenericMessages) -> None:
