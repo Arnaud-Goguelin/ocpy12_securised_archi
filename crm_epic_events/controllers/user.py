@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
-from crm_epic_events.errors import UserIsNotOwnerError
-from crm_epic_events.permissions.roles_permissions import require_roles
+from crm_epic_events.permissions import require_roles
 from crm_epic_events.services import UserAssignRoleInput, UserService, UserUpdateInput
 from crm_epic_events.utils import check_choice
 from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
@@ -75,7 +74,7 @@ class UserController(BaseController):
             data = UserUpdateInput(**raw)
             UserService.update_profile(self.user, self.user, data, self.db)
             print_success("Profile updated successfully.")
-        except (ValidationError, UserIsNotOwnerError) as error:
+        except ValidationError as error:
             print_error(str(error))
         return NavSignal.STAY
 
@@ -100,7 +99,7 @@ class UserController(BaseController):
             data = UserUpdateInput(**raw)
             UserService.update_profile(self.user, target, data, self.db)
             print_success("User updated successfully.")
-        except (ValidationError, UserIsNotOwnerError) as error:
+        except ValidationError as error:
             print_error(str(error))
         return NavSignal.STAY
 
