@@ -2,15 +2,15 @@ from typing import TYPE_CHECKING
 
 import bcrypt
 
-from crm_epic_events.errors import UserIsNotOwnerError, UserNotAllowedError
 from crm_epic_events.repositories import UserRepository
+from crm_epic_events.services.user.schemas import UserRegisterInput, UserUpdateInput
+from crm_epic_events.utils import Roles, db_transaction
 
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
     from crm_epic_events.models import User
-    from crm_epic_events.utils import Roles, db_transaction
 
 
 class UserService:
@@ -27,67 +27,55 @@ class UserService:
         return UserRepository.get_all_by_role(role, db)
 
     @staticmethod
-    def register(first_name: str, last_name: str, email: str, password: str, db: "Session") -> "User":
+    def register(data: "UserRegisterInput", db: "Session") -> "User":
         """
         Public registration — no auth required.
         Role defaults to SALES, a MANAGER must assign the real role afterwards.
         """
 
-        existing = UserRepository.get_by_email(email, db)
+        existing = UserRepository.get_by_email(data.email, db)
         if existing:
-            raise ValueError(f"Email '{email}' is already in use.")
+            raise ValueError(f"Email '{data.email}' is already in use.")
 
-        hashed = UserService._hash_password(password)
+        hashed = UserService._hash_password(data.password)
         with db_transaction(db, "Registering user"):
-            return UserRepository.create(first_name, last_name, email, hashed, db)
+            return UserRepository.create(data.first_name, data.last_name, data.email, hashed, db)
 
     @staticmethod
     def update_profile(
         current_user: "User",
         target_user: "User",
-        data: dict,
+        data: UserUpdateInput,
         db: "Session",
     ) -> "User":
         """
         A user can update their own profile (not their role).
-        A MANAGER can update any user's profile (not their role).
+        A MANAGER can update any user's profile.
         Role changes are handled separately via assign_role().
         """
-        data.pop("role", None)  # role change is never allowed here
-
         is_manager = current_user.role == Roles.MANAGER
-        is_self = current_user.id == target_user.id
+        if not is_manager:
+            data.role = None
 
-        if not is_manager and not is_self:
-            raise UserIsNotOwnerError()
-
-        if "password" in data:
-            data["password"] = UserService._hash_password(data["password"])
+        if data.password:
+            data.password = UserService._hash_password(data.password)
 
         with db_transaction(db, "Updating user profile"):
             return UserRepository.update(target_user, data, db)
 
     @staticmethod
     def assign_role(
-        current_user: "User",
         target_user: "User",
-        role: Roles,
+        data: UserUpdateInput,
         db: "Session",
     ) -> "User":
-        """MANAGER only — assigns a role to any user."""
-        if current_user.role != Roles.MANAGER:
-            raise UserNotAllowedError()
         with db_transaction(db, "Assigning role"):
-            return UserRepository.update(target_user, {"role": role}, db)
+            return UserRepository.update(target_user, data, db)
 
     @staticmethod
     def delete(
-        current_user: "User",
         target_user: "User",
         db: "Session",
     ) -> None:
-        """MANAGER only."""
-        if current_user.role != Roles.MANAGER:
-            raise UserNotAllowedError()
         with db_transaction(db, "Deleting user"):
             UserRepository.delete(target_user, db)
