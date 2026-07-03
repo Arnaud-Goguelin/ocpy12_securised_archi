@@ -66,7 +66,15 @@ class CompanyController(BaseController):
 
     @require_roles(Roles.MANAGER, Roles.SALES)
     def handle_update(self) -> NavSignal:
-        companies = CompanyService.get_all(self.db)
+
+        # improve app perf by filtering result by salesperson if user is not manager
+        # and also allow self.user to update its own companies only if it is not manager
+        companies = (
+            CompanyService.get_all(self.db)
+            if self.user.role == Roles.MANAGER
+            else CompanyService.get_by_customers_salesperson(self.user.id, self.db)
+        )
+
         try:
             target = self.view.prompt_select_company(companies)
         except ValueError as error:
@@ -75,6 +83,11 @@ class CompanyController(BaseController):
 
         if target is None:
             return NavSignal.STAY
+
+        # this check is redundant because if self.user is not manager we have already filter
+        # companies by salesperson
+        # its just show both way to check at if
+        self.check_ownership(self.user.id)
 
         raw = self.view.prompt_update(target)
         if not raw:
@@ -102,6 +115,8 @@ class CompanyController(BaseController):
 
         if target is None:
             return NavSignal.STAY
+
+        # no ownship check needed here, since only the manager can delete a company
 
         try:
             CompanyService.delete(self.user, target, self.db)
