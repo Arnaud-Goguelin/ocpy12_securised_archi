@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from crm_epic_events.models import Contract
 from crm_epic_events.utils import db_transaction
 
+
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
@@ -33,7 +34,6 @@ class ContractService:
 
     @staticmethod
     def create(
-        current_user: "User",
         customer: "Customer",
         data: "ContractCreateInput",
         db: "Session",
