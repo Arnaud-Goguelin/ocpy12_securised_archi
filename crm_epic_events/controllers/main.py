@@ -4,6 +4,7 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.controllers.company import CompanyController
+from crm_epic_events.controllers.contract import ContractController
 from crm_epic_events.controllers.customer import CustomerController
 from crm_epic_events.controllers.user import UserController
 from crm_epic_events.models import User
@@ -93,7 +94,8 @@ class MainController(BaseController):
         controller.handle_companies_menu()
 
     def handle_contracts_menu(self):
-        pass
+        controller = ContractController(self.db, self.user)
+        controller.handle_contracts_menu()
 
     def handle_events_menu(self):
         pass
