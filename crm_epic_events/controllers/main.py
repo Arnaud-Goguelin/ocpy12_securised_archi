@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
+from crm_epic_events.controllers.company import CompanyController
+from crm_epic_events.controllers.customer import CustomerController
 from crm_epic_events.controllers.user import UserController
 from crm_epic_events.models import User
 from crm_epic_events.services import UserRegisterInput, UserService
@@ -40,8 +42,9 @@ class MainController(BaseController):
             MenuItem("1", "Customers", self.handle_customers_menu),
             MenuItem("2", "Contracts", self.handle_contracts_menu),
             MenuItem("3", "Events", self.handle_events_menu),
-            MenuItem("4", "Users", self.handle_users_menu),
-            MenuItem("5", "Logout", AuthService.logout),
+            MenuItem("4", "Company", self.handle_company_menu),
+            MenuItem("5", "Users", self.handle_users_menu),
+            MenuItem("6", "Logout", AuthService.logout),
             MenuItem(StandardInputs.CANCELLED, "Quit", self.exit_app),
         ]
         self.guest_menu_items = [
@@ -82,7 +85,12 @@ class MainController(BaseController):
             print_error(str(error))
 
     def handle_customers_menu(self):
-        pass
+        controller = CustomerController(self.db, self.user)
+        controller.handle_customers_menu()
+
+    def handle_company_menu(self):
+        controller = CompanyController(self.db, self.user)
+        controller.handle_companies_menu()
 
     def handle_contracts_menu(self):
         pass
