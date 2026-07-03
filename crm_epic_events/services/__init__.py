@@ -4,3 +4,5 @@ from .customer.schemas import CustomerCreateInput, CustomerUpdateInput
 from .customer.service import CustomerService
 from .company.schemas import CompanyCreateInput, CompanyUpdateInput
 from .company.service import CompanyService
+from .contract.schemas import ContractCreateInput, ContractUpdateInput
+from .contract.service import ContractService
