@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, select
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
+from crm_epic_events.services.company.schemas import CompanyUpdateInput
 
 
 if TYPE_CHECKING:
@@ -41,3 +42,34 @@ class Company(Base):
 
     # --- specific attributes ---
     name: Mapped[str] = mapped_column(String)
+
+    @classmethod
+    def get_by_vat(cls, vat_number: str, db: Session) -> "Company | None":
+        query = select(cls).filter_by(vat_number=vat_number)
+        result = db.execute(query)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    def get_all(cls, db: Session) -> list["Company"]:
+        query = select(cls)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def create(cls, vat_number: str, name: str, db: Session) -> "Company":
+        company = cls(vat_number=vat_number, name=name)
+        db.add(company)
+        db.flush()
+        db.refresh(company)
+        return company
+
+    def update(self, data: "CompanyUpdateInput", db: Session) -> "Company":
+        for key, value in data.model_dump(exclude_none=True).items():
+            setattr(self, key, value)
+        db.flush()
+        db.refresh(self)
+        return self
+
+    def delete(self, db: Session) -> None:
+        db.delete(self)
+        db.flush()
