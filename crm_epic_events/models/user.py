@@ -6,6 +6,7 @@ from sqlalchemy import String, Uuid, select
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
+from crm_epic_events.services.user.schemas import UserUpdateInput
 from crm_epic_events.utils.constants import Roles
 
 
@@ -98,3 +99,40 @@ class User(Base):
         query = select(cls).filter_by(id=_id)
         result = db.execute(query)
         return result.scalar_one()
+
+    @classmethod
+    def get_all(cls, db: "Session") -> list["User"]:
+        query = select(cls)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def get_all_by_role(cls, role: Roles, db: "Session") -> list["User"]:
+        query = select(cls).filter_by(role=role)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def create(cls, first_name: str, last_name: str, email: str, password: str, db: "Session") -> "User":
+        user = cls(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=password,
+            role=Roles.SALES,  # default role, MANAGER assigns the real role after
+        )
+        db.add(user)
+        db.flush()
+        db.refresh(user)
+        return user
+
+    def update(self, data: UserUpdateInput, db: "Session") -> "User":
+        for key, value in data.model_dump(exclude_none=True).items():
+            setattr(self, key, value)
+        db.flush()
+        db.refresh(self)
+        return self
+
+    def delete(self, db: "Session") -> None:
+        db.delete(self)
+        db.flush()

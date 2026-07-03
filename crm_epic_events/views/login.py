@@ -1,4 +1,4 @@
-from crm_epic_events.utils import print_info, print_title, prompt
+from crm_epic_events.utils import print_title, prompt
 
 
 class LoginView:
@@ -10,7 +10,6 @@ class LoginView:
     def display() -> str:
         print_title("📖  Epic Events CRM  📖")
 
-        print_info("Login required")
         email = prompt("Email")
         password = prompt("Password")
 

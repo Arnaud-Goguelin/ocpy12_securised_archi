@@ -114,5 +114,36 @@ class TestLogout:
             access_token(user),
             refresh_token(user),
         )
-        AuthService.logout()
+        with (
+            patch("crm_epic_events.services.authentication.service.print_success"),
+            patch("crm_epic_events.services.authentication.service.exit_app"),
+        ):
+            AuthService.logout()
+
         assert AuthTokensService.load_tokens() is None
+
+    def test_logout_prints_success_message(self, user, access_token, refresh_token):
+        AuthTokensService.save_tokens(
+            access_token(user),
+            refresh_token(user),
+        )
+        with (
+            patch("crm_epic_events.services.authentication.service.print_success") as mock_print,
+            patch("crm_epic_events.services.authentication.service.exit_app"),
+        ):
+            AuthService.logout()
+
+        mock_print.assert_called_once_with("Logged out successfully")
+
+    def test_logout_exits_app(self, user, access_token, refresh_token):
+        AuthTokensService.save_tokens(
+            access_token(user),
+            refresh_token(user),
+        )
+        with (
+            patch("crm_epic_events.services.authentication.service.print_success"),
+            patch("crm_epic_events.services.authentication.service.exit_app") as mock_exit,
+        ):
+            AuthService.logout()
+
+        mock_exit.assert_called_once()

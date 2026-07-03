@@ -1,5 +1,6 @@
 import traceback
 
+from crm_epic_events.config import Config
 from crm_epic_events.controllers import MainController
 from crm_epic_events.models.database import get_db
 
@@ -20,7 +21,8 @@ class Application:
             self.controller.handle_main_menu()
         except Exception as error:
             print_unexpected_error(str(error), GenericMessages.MAIN_MENU_RETURN)
-            print_info(traceback.format_exc())
+            if Config.APP_ENV == "local":
+                print_info(traceback.format_exc())
             self.controller.handle_main_menu()
         finally:
             self.db.close()
