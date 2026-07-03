@@ -139,7 +139,7 @@ class UserController(BaseController):
             return NavSignal.STAY
 
         try:
-            UserService.delete(self.user, target, self.db)
+            UserService.delete(target, self.db)
             print_success(f"User '{target.first_name} {target.last_name}' deleted.")
         except ValueError as error:
             print_error(str(error))
