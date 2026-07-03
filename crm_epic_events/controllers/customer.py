@@ -65,6 +65,9 @@ class CustomerController(BaseController):
 
     @require_roles(Roles.MANAGER, Roles.SALES)
     def handle_update(self) -> NavSignal:
+
+        # improve app perf by filtering result by salesperson if user is not manager
+        # and also allow self.user to update its own customers only if it is not manager
         customers = (
             CustomerService.get_all(self.db)
             if self.user.role == Roles.MANAGER
@@ -80,6 +83,9 @@ class CustomerController(BaseController):
         if target is None:
             return NavSignal.STAY
 
+        # this check is redundant because if self.user is not manager we have already filter
+        # customers by salesperson
+        # its just show both way to check at if
         self.check_ownership(target.salesperson)
 
         raw = self.view.prompt_update(target)
