@@ -3,10 +3,12 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, Uuid, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import DateTime, ForeignKey, String, Uuid, func, select
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
+from crm_epic_events.services.customer.schemas import CustomerUpdateInput
+from crm_epic_events.utils import db_transaction
 
 
 if TYPE_CHECKING:
@@ -110,9 +112,67 @@ class Customer(Base):
 
     # --- specific attributes ---
     email: Mapped[str] = mapped_column(String, unique=True)
-    password: Mapped[str] = mapped_column(String)
     first_name: Mapped[str] = mapped_column(String)
     last_name: Mapped[str] = mapped_column(String)
     phone: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
     last_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+
+    @classmethod
+    def get_all(cls, db: "Session") -> list["Customer"]:
+        query = select(cls)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def get_all_by_salesperson(cls, salesperson_id: uuid.UUID, db: "Session") -> list["Customer"]:
+        query = select(cls).filter_by(salesperson_id=salesperson_id)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def get_all_by_company_vat(cls, company_vat: str, db: "Session") -> list["Customer"]:
+        query = select(cls).filter_by(company_vat=company_vat)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def create(
+        cls,
+        salesperson_id: uuid.UUID,
+        company_vat: str,
+        email: str,
+        first_name: str,
+        last_name: str,
+        phone: str,
+        db: "Session",
+    ) -> "Customer":
+        customer = cls(
+            salesperson_id=salesperson_id,
+            company_vat=company_vat,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+        )
+        db.add(customer)
+        db.flush()
+        db.refresh(customer)
+        return customer
+
+    def update(self, data: CustomerUpdateInput, db: "Session") -> "Customer":
+        for key, value in data.model_dump(exclude_none=True).items():
+            setattr(self, key, value)
+        db.flush()
+        db.refresh(self)
+        return self
+
+    def delete(self, db: "Session") -> None:
+        company_vat = self.company_vat
+        with db_transaction(db, "Deleting customer"):
+            db.delete(self)
+            remaining = Customer.get_all_by_company_vat(company_vat, db)
+            if not remaining:
+                company = Company.get_by_vat(company_vat, db)
+                if company:
+                    db.delete(company)
