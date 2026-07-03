@@ -102,38 +102,45 @@ class Contract(Base):
 
     # --- Queries ---
 
-    @staticmethod
-    def get_all(db: Session) -> list["Contract"]:
-        return list(db.execute(select(Contract)).scalars().all())
+    @classmethod
+    def get_all(cls, db: "Session") -> list["Contract"]:
+        query = select(cls)
+        result = db.execute(query)
+        return list(result.scalars().all())
 
-    @staticmethod
-    def get_by_id(contract_id: str, db: Session) -> "Contract | None":
-        return db.get(Contract, contract_id)
+    @classmethod
+    def get_by_id(cls, contract_id: uuid.UUID, db: "Session") -> "Contract | None":
+        return db.get(cls, contract_id)
 
-    @staticmethod
-    def get_all_by_salesperson(salesperson_id: str, db: Session) -> list["Contract"]:
-        return list(db.execute(select(Contract).where(Contract.salesperson_id == salesperson_id)).scalars().all())
+    @classmethod
+    def get_all_by_salesperson(cls, salesperson_id: uuid.UUID, db: "Session") -> list["Contract"]:
+        query = select(cls).filter_by(salesperson_id=salesperson_id)
+        result = db.execute(query)
+        return list(result.scalars().all())
 
-    @staticmethod
-    def get_unsigned(db: Session) -> list["Contract"]:
-        return list(
-            db.execute(select(Contract).where(Contract.status == False)).scalars().all()  # noqa: E712
-        )
+    @classmethod
+    def get_unsigned(cls, db: "Session") -> list["Contract"]:
+        query = select(cls).filter_by(status=False)
+        result = db.execute(query)
+        return list(result.scalars().all())
 
-    @staticmethod
-    def get_unpaid(db: Session) -> list["Contract"]:
-        return list(db.execute(select(Contract).where(Contract.remaining_amount > 0)).scalars().all())
+    @classmethod
+    def get_unpaid(cls, db: "Session") -> list["Contract"]:
+        query = select(cls).where(cls.remaining_amount > 0)
+        result = db.execute(query)
+        return list(result.scalars().all())
 
-    @staticmethod
+    @classmethod
     def create(
-        customer_id: str,
-        salesperson_id: str,
-        total_amount: float,
-        remaining_amount: float,
+        cls,
+        customer_id: uuid.UUID,
+        salesperson_id: uuid.UUID,
+        total_amount: Decimal,
+        remaining_amount: Decimal,
         status: bool,
-        db: Session,
+        db: "Session",
     ) -> "Contract":
-        contract = Contract(
+        contract = cls(
             customer_id=customer_id,
             salesperson_id=salesperson_id,
             total_amount=total_amount,
@@ -145,13 +152,13 @@ class Contract(Base):
         db.refresh(contract)
         return contract
 
-    def update(self, data: "ContractUpdateInput", db: Session) -> "Contract":
-        for field, value in data.model_dump(exclude_none=True).items():
-            setattr(self, field, value)
+    def update(self, data: ContractUpdateInput, db: "Session") -> "Contract":
+        for key, value in data.model_dump(exclude_none=True).items():
+            setattr(self, key, value)
         db.flush()
         db.refresh(self)
         return self
 
-    def delete(self, db: Session) -> None:
+    def delete(self, db: "Session") -> None:
         db.delete(self)
         db.flush()
