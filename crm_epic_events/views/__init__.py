@@ -3,3 +3,4 @@ from .login import LoginView
 from .user import UserView
 from .customer import CustomerView
 from .company import CompanyView
+from .contract import ContractView

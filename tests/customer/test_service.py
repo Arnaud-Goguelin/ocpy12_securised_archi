@@ -1,4 +1,3 @@
-# tests/services/customer/test_service.py
 import uuid
 
 from unittest.mock import MagicMock, patch
