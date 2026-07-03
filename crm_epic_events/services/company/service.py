@@ -1,3 +1,5 @@
+import uuid
+
 from typing import TYPE_CHECKING
 
 from customer.schemas import CustomerCreateInput
@@ -18,6 +20,10 @@ class CompanyService:
     @staticmethod
     def get_all(db: "Session") -> list["Company"]:
         return Company.get_all(db)
+
+    @staticmethod
+    def get_by_customers_salesperson(current_user_id: uuid.UUID, db: "Session") -> list["Company"]:
+        return Company.get_by_customers_salesperson(current_user_id, db)
 
     @staticmethod
     def get_by_vat(vat_number: str, db: "Session") -> "Company | None":

@@ -1,3 +1,5 @@
+import uuid
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import String, select
@@ -52,6 +54,12 @@ class Company(Base):
     @classmethod
     def get_all(cls, db: Session) -> list["Company"]:
         query = select(cls)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def get_by_customers_salesperson(cls, current_user_id: uuid.UUID, db: Session) -> list["Company"]:
+        query = select(cls).join(Customer).filter(Customer.salesperson_id == current_user_id)
         result = db.execute(query)
         return list(result.scalars().all())
 
