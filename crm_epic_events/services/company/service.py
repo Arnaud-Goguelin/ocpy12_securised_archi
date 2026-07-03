@@ -2,10 +2,9 @@ import uuid
 
 from typing import TYPE_CHECKING
 
-from customer.schemas import CustomerCreateInput
-
 from crm_epic_events.errors import UserNotAllowedError
 from crm_epic_events.models import Company
+from crm_epic_events.services.customer.schemas import CustomerCreateInput
 from crm_epic_events.utils import Roles, db_transaction
 
 

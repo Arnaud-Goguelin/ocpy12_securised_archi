@@ -1,8 +1,7 @@
 from typing import TYPE_CHECKING
 
-from company.service import CompanyService
-
 from crm_epic_events.models import Customer
+from crm_epic_events.services.company.service import CompanyService
 from crm_epic_events.utils import db_transaction
 
 
