@@ -39,20 +39,15 @@ class CustomerView:
         return data
 
     @staticmethod
-    def prompt_select_customer(customers: list["Customer"]) -> "Customer | None":
+    def prompt_select_customer(customers: list["Customer"]) -> str:
+        """Displays a numbered list and returns the raw input string."""
         for i, customer in enumerate(customers, start=1):
             print_option(
                 str(i),
                 f"{customer.first_name} {customer.last_name}  |  {customer.email}  |  {customer.company_vat}",
             )
         print_option("Q", "Cancel")
-        raw = prompt("Select a customer").strip().upper()
-        if raw == "Q":
-            return None
-        try:
-            return customers[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
+        return prompt("Select a customer").strip().upper()
 
     # --- Display ---
 

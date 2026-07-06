@@ -30,13 +30,7 @@ class CompanyView:
         for i, company in enumerate(companies, start=1):
             print_option(str(i), f"{company.name}  |  VAT: {company.vat_number}")
         print_option("Q", "Cancel")
-        raw = prompt("Select a company").strip().upper()
-        if raw == "Q":
-            return None
-        try:
-            return companies[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
+        return prompt("Select a company").strip().upper()
 
     # --- Display ---
 
