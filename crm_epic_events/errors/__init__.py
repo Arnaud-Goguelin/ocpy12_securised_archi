@@ -6,3 +6,4 @@ from .authentication_errors import (
     )
 from .user_errors import UserAlreadyExistsError
 from .permissions_errors import UserNotAllowedError, UserIsNotOwnerError
+from .company_errors import CompanyAlreadyExistsError
