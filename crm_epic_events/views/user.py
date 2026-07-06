@@ -42,31 +42,21 @@ class UserView:
         return data
 
     @staticmethod
-    def prompt_assign_role(target_user: "User") -> Roles:
+    def prompt_assign_role(target_user: "User") -> str:
+        """Displays the role list and returns the raw input string."""
         print_title(f"Assign role — {target_user.first_name} {target_user.last_name}")
         print_info(f"Current role: {target_user.role}")
         for i, role in enumerate(Roles, start=1):
             print_option(str(i), role.value.capitalize())
-        raw = prompt("Choose a role").strip()
-        roles = list(Roles)
-        try:
-            return roles[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid role choice: '{raw}'") from None
+        return prompt("Choose a role").strip()
 
     @staticmethod
-    def prompt_select_user(users: list["User"]) -> "User | None":
-        """Displays a numbered list and returns the selected User, or None if cancelled."""
+    def prompt_select_user(users: list["User"]) -> str:
+        """Displays a numbered list and returns the raw input string."""
         for i, user in enumerate(users, start=1):
             print_option(str(i), f"{user.first_name} {user.last_name}  |  {user.email}  |  {user.role}")
         print_option("Q", "Cancel")
-        raw = prompt("Select a user").strip().upper()
-        if raw == "Q":
-            return None
-        try:
-            return users[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
+        return prompt("Select a user").strip().upper()
 
     # --- Display ---
 
@@ -83,17 +73,10 @@ class UserView:
                 print_info(f"  {user.first_name} {user.last_name}  |  {user.email}  |  {user.role}")
 
     @staticmethod
-    def display_role_filter_menu() -> Roles | None:
-        """Returns the chosen role filter, or None for 'all users'."""
+    def display_role_filter_menu() -> str:
+        """Displays the role filter menu and returns the raw input string."""
         print_title("Filter users by role")
         print_option("0", "All")
         for i, role in enumerate(Roles, start=1):
             print_option(str(i), role.value.capitalize())
-        raw = prompt("Choose a filter").strip()
-        if raw == "0":
-            return None
-        roles = list(Roles)
-        try:
-            return roles[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid filter: '{raw}'") from None
+        return prompt("Choose a filter").strip()
