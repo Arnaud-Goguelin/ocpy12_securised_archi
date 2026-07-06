@@ -74,10 +74,13 @@ class CustomerController(BaseController):
             else CustomerService.get_all_by_salesperson(self.user, self.db)
         )
 
+        raw = self.view.prompt_select_customer(customers)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_customer(customers)
-        except ValueError as error:
-            print_error(str(error))
+            target = customers[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
