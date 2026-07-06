@@ -3,7 +3,7 @@ import factory
 
 from faker import Faker
 
-from crm_epic_events.models import Company, Contract, Customer, User
+from crm_epic_events.models import Company, Contract, Customer, Event, User
 from crm_epic_events.utils import Roles
 
 
@@ -52,3 +52,18 @@ class ContractFactory(factory.Factory):
     total_amount = factory.Faker("pyfloat", min_value=100, max_value=100_000, right_digits=2, positive=True)
     remaining_amount = factory.LazyAttribute(lambda o: round(o.total_amount / 2, 2))
     status = False
+
+
+class EventFactory(factory.Factory):
+    class Meta:
+        model = Event
+
+    id = factory.Faker("uuid4")
+    contract_id = factory.Faker("uuid4")
+    customer_id = factory.Faker("uuid4")
+    support_id = None
+    start_date = factory.Faker("date_time_this_year", tzinfo=__import__("datetime").timezone.utc)
+    end_date = factory.Faker("future_datetime", tzinfo=__import__("datetime").timezone.utc)
+    location = factory.Faker("city")
+    attendees = factory.Faker("pyint", min_value=1, max_value=500)
+    notes = None

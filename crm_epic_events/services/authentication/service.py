@@ -84,6 +84,10 @@ class AuthTokensService:
 
 
 class AuthService:
+    # factice hash to prevent timing attacks even if user doesn't exist
+    # store as a constant class attribute to avoid recomputing it every time
+    _FACTICE_PASSWORD = bcrypt.hashpw(str(uuid.uuid4()).encode(), bcrypt.gensalt())
+
     @staticmethod
     def login(email: str, password: str, db: "Session") -> "User":
         try:
@@ -92,12 +96,10 @@ class AuthService:
             user = None
 
         # factice hash to prevent timing attacks even if user doesn't exist
-        factice_password = bcrypt.hashpw(str(uuid.uuid4()).encode(), bcrypt.gensalt())
-
         if user is None:
             bcrypt.checkpw(
                 password.encode(),
-                factice_password,
+                AuthService._FACTICE_PASSWORD,
             )
             are_credentials_valid = False
         else:

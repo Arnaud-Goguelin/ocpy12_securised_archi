@@ -4,3 +4,4 @@ from .user import UserView
 from .customer import CustomerView
 from .company import CompanyView
 from .contract import ContractView
+from .event import EventView
