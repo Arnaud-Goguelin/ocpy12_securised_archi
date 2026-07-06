@@ -20,7 +20,7 @@ class EventCreateInput(BaseModel):
 
     @model_validator(mode="after")
     def end_after_start(self) -> "EventCreateInput":
-        if self.end_date <= self.start_date:
+        if self.start_date and self.end_date and self.end_date <= self.start_date:
             raise ValueError("end_date must be after start_date")
         return self
 
