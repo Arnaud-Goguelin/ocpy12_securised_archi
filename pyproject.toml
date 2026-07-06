@@ -102,3 +102,21 @@ lines-after-imports = 2
 #===========================
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--cov=crm_epic_events --cov-report=term-missing"
+
+[tool.coverage.run]
+omit = [
+    "migrations/*",
+    "crm_epic_events/*/__init__.py",
+    "crm_epic_events/__init__.py",
+    "crm_epic_events/__main__.py",
+    "crm_epic_events/views/*",
+    "crm_epic_events/utils/*",
+    "crm_epic_events/models/start_tasks/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "if TYPE_CHECKING:",
+    "pragma: no cover",
+]
