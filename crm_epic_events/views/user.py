@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from crm_epic_events.utils.constants import Roles, StandardInputs
-from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt
+from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt, prompt_secret
 
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ class UserView:
             "first_name": prompt("First name").strip(),
             "last_name": prompt("Last name").strip(),
             "email": prompt("Email").strip(),
-            "password": prompt("Password").strip(),
+            "password": prompt_secret("Password").strip(),
         }
 
     @staticmethod
@@ -36,7 +36,9 @@ class UserView:
             label = f"{field_name.replace('_', ' ').title()}"
             if field_name != "password":
                 label += f" (current: {current})"
-            value = prompt(label).strip()
+                value = prompt(label).strip()
+            else:
+                value = prompt_secret(label).strip()
             if value:
                 data[field_name] = value
         return data

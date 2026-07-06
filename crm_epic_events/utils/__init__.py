@@ -8,6 +8,7 @@ from .printers import (
     print_error,
     print_validation_errors,
     prompt,
+    prompt_secret,
     )
 from .check_choice import check_choice
 from .exit_app import exit_app

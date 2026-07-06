@@ -1,3 +1,5 @@
+import getpass
+
 from typing import TYPE_CHECKING
 
 from colorama import Fore, Style
@@ -52,3 +54,7 @@ def print_success(text: str) -> None:
 
 def prompt(label: str) -> str:
     return input(f"{colored(label, Fore.LIGHTYELLOW_EX)}: ")
+
+
+def prompt_secret(label: str) -> str:
+    return getpass.getpass(f"{colored(label, Fore.LIGHTYELLOW_EX)}: ")
