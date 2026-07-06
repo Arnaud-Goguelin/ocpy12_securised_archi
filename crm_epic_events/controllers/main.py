@@ -7,6 +7,7 @@ from crm_epic_events.controllers.company import CompanyController
 from crm_epic_events.controllers.contract import ContractController
 from crm_epic_events.controllers.customer import CustomerController
 from crm_epic_events.controllers.user import UserController
+from crm_epic_events.errors import CustomAuthenticationError
 from crm_epic_events.models import User
 from crm_epic_events.services import UserRegisterInput, UserService
 from crm_epic_events.services.authentication.service import AuthService
@@ -70,8 +71,11 @@ class MainController(BaseController):
 
     def handle_login(self):
         email, password = self.login_view.display()
-        self.user = AuthService.login(email, password, self.db)
-        print_success("Login successful!")
+        try:
+            self.user = AuthService.login(email, password, self.db)
+            print_success("Login successful!")
+        except CustomAuthenticationError as error:
+            self.login_view.display_error(error.message)
 
     def handle_register(self):
         raw = self.user_view.prompt_register()

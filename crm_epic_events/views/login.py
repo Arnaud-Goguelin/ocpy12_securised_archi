@@ -1,4 +1,4 @@
-from crm_epic_events.utils import print_title, prompt
+from crm_epic_events.utils import print_error, print_title, prompt
 
 
 class LoginView:
@@ -14,3 +14,7 @@ class LoginView:
         password = prompt("Password")
 
         return email, password
+
+    @staticmethod
+    def display_error(message: str) -> None:
+        print_error(message)
