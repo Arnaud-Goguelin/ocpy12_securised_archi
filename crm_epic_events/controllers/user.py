@@ -46,16 +46,17 @@ class UserController(BaseController):
     # --- Handlers ---
 
     def handle_list(self) -> NavSignal:
-        try:
-            role_filter = self.view.display_role_filter_menu()
-        except ValueError as error:
-            print_error(str(error))
-            return NavSignal.STAY
-
-        if role_filter is None:
+        raw = self.view.display_role_filter_menu()
+        if raw == "0":
             users = UserService.get_all(self.db)
             title = "All users"
         else:
+            roles = list(Roles)
+            try:
+                role_filter = roles[int(raw) - 1]
+            except (ValueError, IndexError):
+                print_error(f"Invalid filter: '{raw}'")
+                return NavSignal.STAY
             users = UserService.get_all_by_role(role_filter, self.db)
             title = f"Users — {role_filter.value.capitalize()}"
 
@@ -82,10 +83,13 @@ class UserController(BaseController):
     def handle_update_profile_other(self) -> NavSignal:
         users = UserService.get_all(self.db)
         users.remove(self.user)
+        raw = self.view.prompt_select_user(users)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_user(users)
-        except ValueError as error:
-            print_error(str(error))
+            target = users[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
@@ -106,33 +110,42 @@ class UserController(BaseController):
     @require_roles(Roles.MANAGER)
     def handle_assign_role(self) -> NavSignal:
         users = UserService.get_all(self.db)
+        raw = self.view.prompt_select_user(users)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_user(users)
-        except ValueError as error:
-            print_error(str(error))
+            target = users[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
-        if target is None:
+        raw_role = self.view.prompt_assign_role(target)
+        roles = list(Roles)
+        try:
+            role = roles[int(raw_role) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid role choice: '{raw_role}'")
             return NavSignal.STAY
 
         try:
-            role = self.view.prompt_assign_role(target)
             data = UserAssignRoleInput(role=role)
-            UserService.assign_role(self.user, target, data, self.db)
+            UserService.assign_role(target, data, self.db)
             print_success(f"Role '{role}' assigned to {target.first_name} {target.last_name}.")
         except ValidationError as error:
             print_validation_errors(error)
-        except ValueError as error:
-            print_error(str(error))
         return NavSignal.STAY
 
     @require_roles(Roles.MANAGER)
     def handle_delete(self) -> NavSignal:
         users = UserService.get_all(self.db)
+        users.remove(self.user)
+        raw = self.view.prompt_select_user(users)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_user(users)
-        except ValueError as error:
-            print_error(str(error))
+            target = users[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
