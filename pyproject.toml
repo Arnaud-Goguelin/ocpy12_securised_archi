@@ -7,7 +7,7 @@ package = true
 include = ["crm_epic_events*"]
 #===========================
 [project]
-name = "crm_episc_events"
+name = "crm_epic_events"
 version = "0.1.0"
 description = "CLI CRM"
 authors = [
