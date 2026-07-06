@@ -56,8 +56,9 @@ class CustomerService:
     @staticmethod
     def delete(target_customer: "Customer", db: "Session") -> None:
         company_vat = target_customer.company_vat
+        current_company = target_customer.company
         with db_transaction(db, "Deleting customer"):
             target_customer.delete(db)
             remaining = Customer.get_all_by_company_vat(company_vat, db)
             if not remaining:
-                target_customer.company.delete_by_vat(company_vat, db)
+                current_company.delete_by_vat(company_vat, db)
