@@ -25,11 +25,14 @@ class CustomerController(BaseController):
         self.user = user
         self.view = CustomerView()
         self.menu_items = [
-            MenuItem("1", "List all customers", self.handle_list),
-            MenuItem("2", "List my customers", self.handle_list_mine, [Roles.SALES]),
-            MenuItem("3", "Create a customer", self.handle_create, [Roles.SALES]),
-            MenuItem("4", "Update a customer", self.handle_update, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("5", "Delete a customer", self.handle_delete, [Roles.MANAGER]),
+            MenuItem(
+                "1",
+                "List all customers" if self.user.role == Roles.MANAGER else "List my customers",
+                self.handle_list,
+            ),
+            MenuItem("2", "Create a customer", self.handle_create, [Roles.SALES]),
+            MenuItem("3", "Update a customer", self.handle_update, [Roles.MANAGER, Roles.SALES]),
+            MenuItem("4", "Delete a customer", self.handle_delete, [Roles.MANAGER]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 
@@ -109,10 +112,13 @@ class CustomerController(BaseController):
     @require_roles(Roles.MANAGER)
     def handle_delete(self) -> NavSignal:
         customers = CustomerService.get_all(self.db)
+        raw = self.view.prompt_select_customer(customers)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_customer(customers)
-        except ValueError as error:
-            print_error(str(error))
+            target = customers[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
