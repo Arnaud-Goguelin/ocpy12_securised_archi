@@ -1,2 +1,2 @@
-from .authentication_errors import CustomAuthenticationError, CustomInvalidCredentialsError, CustomInvalidTokenError
+from .authentication_errors import CustomAuthenticationError, CustomInvalidCredentialsError, CustomInvalidTokenError, UserNotAuthenticatedError
 from .permissions_errors import UserNotAllowedError, UserIsNotOwnerError
