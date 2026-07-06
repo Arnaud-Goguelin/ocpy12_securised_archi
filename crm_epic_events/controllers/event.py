@@ -3,9 +3,13 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
-from crm_epic_events.errors import UserIsNotOwnerError, UserNotAllowedError
+from crm_epic_events.errors import (
+    ContractNotFoundError,
+    ContractNotSignedError,
+    UserIsNotOwnerError,
+)
 from crm_epic_events.permissions import require_roles
-from crm_epic_events.services import EventService
+from crm_epic_events.services import ContractService, EventService
 from crm_epic_events.services.event.schemas import EventCreateInput, EventUpdateInput
 from crm_epic_events.utils import check_choice
 from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
@@ -25,7 +29,7 @@ class EventController(BaseController):
         self.user = user
         self.view = EventView()
         self.menu_items = [
-            MenuItem("1", "List all events", self.handle_list),
+            MenuItem("1", "List my events" if self.user.role == Roles.SUPPORT else "List all events", self.handle_list),
             MenuItem("2", "List events without support", self.handle_list_without_support, [Roles.MANAGER]),
             MenuItem("3", "Create an event", self.handle_create, [Roles.SALES]),
             MenuItem("4", "Update an event", self.handle_update, [Roles.MANAGER, Roles.SUPPORT]),
@@ -58,14 +62,31 @@ class EventController(BaseController):
 
     @require_roles(Roles.SALES)
     def handle_create(self) -> NavSignal:
-        raw = self.view.prompt_create()
+        # Only signed contracts owned by the current salesperson
+        all_contracts = ContractService.get_all_by_salesperson(self.user, self.db)
+        signed_contracts = [contract for contract in all_contracts if contract.status]
+
+        if not signed_contracts:
+            print_error("No signed contracts found for your customers.")
+            return NavSignal.STAY
+
+        raw_contract, raw_data = self.view.prompt_create(signed_contracts)
         try:
-            data = EventCreateInput(**raw)
+            contract = signed_contracts[int(raw_contract) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw_contract}'")
+            return NavSignal.STAY
+
+        raw_data["contract_id"] = str(contract.id)
+        raw_data["customer_id"] = str(contract.customer_id)
+
+        try:
+            data = EventCreateInput(**raw_data)
             event = EventService.create(data, self.db)
             print_success(f"Event '{event.id}' created successfully.")
         except ValidationError as error:
             print_validation_errors(error)
-        except UserNotAllowedError as error:
+        except (ContractNotFoundError, ContractNotSignedError) as error:
             print_error(error.message)
         return NavSignal.STAY
 
@@ -77,25 +98,24 @@ class EventController(BaseController):
             if self.user.role == Roles.MANAGER
             else EventService.get_all_by_support(self.user, self.db)
         )
-
-        try:
-            target = self.view.prompt_select_event(events)
-        except ValueError as error:
-            print_error(str(error))
+        raw = self.view.prompt_select_event(events)
+        if raw == StandardInputs.CANCELLED:
             return NavSignal.STAY
-
-        if target is None:
+        try:
+            target = events[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         self.check_ownership(target.support)
 
-        raw = self.view.prompt_update(target)
-        if not raw:
+        raw_update = self.view.prompt_update(target)
+        if not raw_update:
             print_success("Nothing to update.")
             return NavSignal.STAY
 
         try:
-            data = EventUpdateInput(**raw)
+            data = EventUpdateInput(**raw_update)
             EventService.update(target, data, self.db)
             print_success("Event updated successfully.")
         except ValidationError as error:
@@ -107,21 +127,17 @@ class EventController(BaseController):
     @require_roles(Roles.MANAGER)
     def handle_delete(self) -> NavSignal:
         events = EventService.get_all(self.db)
-
+        raw = self.view.prompt_select_event(events)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_event(events)
-        except ValueError as error:
-            print_error(str(error))
+            target = events[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
-        if target is None:
-            return NavSignal.STAY
-
-        try:
-            EventService.delete(target, self.db)
-            print_success(f"Event '{target.id}' deleted.")
-        except UserNotAllowedError as error:
-            print_error(error.message)
+        EventService.delete(target, self.db)
+        print_success(f"Event '{target.id}' deleted.")
         return NavSignal.STAY
 
     @staticmethod

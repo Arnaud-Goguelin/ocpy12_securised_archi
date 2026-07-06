@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from crm_epic_events.utils import StandardInputs
-from crm_epic_events.utils.printers import print_error, print_info, print_option, print_success, print_title, prompt
+from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt
 
 
 if TYPE_CHECKING:
@@ -16,13 +16,18 @@ class EventView:
         return prompt("Event ID").strip()
 
     @staticmethod
-    def prompt_create() -> dict:
+    def prompt_create(contracts: list) -> tuple[str, dict]:
         print_title("Create new event")
-        return {
-            "contract_id": prompt("Contract ID").strip(),
-            "customer_id": prompt("Customer ID").strip(),
-            "start_date": prompt("Start date (YYYY-MM-DD HH:MM)").strip(),
-            "end_date": prompt("End date (YYYY-MM-DD HH:MM)").strip(),
+        for i, contract in enumerate(contracts, start=1):
+            print_option(
+                str(i),
+                f"Contract {str(contract.id)[:8]}…"
+                f"  |  Customer: {contract.customer.first_name} {contract.customer.last_name}",
+            )
+        raw_contract = prompt("Select a contract").strip()
+        return raw_contract, {
+            "start_date": prompt("Start date (YYYY-MM-DD)").strip(),
+            "end_date": prompt("End date (YYYY-MM-DD)").strip(),
             "location": prompt("Location").strip(),
             "attendees": prompt("Number of attendees").strip(),
             "notes": prompt("Notes (optional)").strip() or None,
@@ -39,7 +44,7 @@ class EventView:
             ("location", target.location),
             ("attendees", str(target.attendees)),
             ("notes", target.notes or ""),
-            ("support_contact_id", str(target.support_contact_id) if target.support_contact_id else ""),
+            ("support_id", str(target.support_id) if target.support_id else ""),
         ]:
             value = prompt(f"{field_name.replace('_', ' ').title()} (current: {current})").strip()
             if value:
@@ -56,13 +61,7 @@ class EventView:
                 f"  |  {event.attendees} attendees",
             )
         print_option(StandardInputs.CANCELLED, "Cancel")
-        raw = prompt("Select an event").strip().upper()
-        if raw == StandardInputs.CANCELLED:
-            return None
-        try:
-            return events[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
+        return prompt("Select an event").strip().upper()
 
     # --- Display ---
 
@@ -73,7 +72,7 @@ class EventView:
             print_info("No events found.")
             return
         for event in events:
-            support = str(event.support_contact_id) if event.support_contact_id else "— unassigned —"
+            support = str(event.support_id) if event.support_id else "— unassigned —"
             print_info(
                 f"  [{event.id}]"
                 f"  |  {event.location}"
@@ -81,11 +80,3 @@ class EventView:
                 f"  |  {event.attendees} attendees"
                 f"  |  support: {support}"
             )
-
-    @staticmethod
-    def display_success(message: str) -> None:
-        print_success(message)
-
-    @staticmethod
-    def display_error(message: str) -> None:
-        print_error(message)
