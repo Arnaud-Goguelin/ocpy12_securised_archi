@@ -50,9 +50,9 @@ class EventView:
         for i, event in enumerate(events, start=1):
             print_option(
                 str(i),
-                f"[{event.id}]  {event.location}  |  "
-                f"{event.start_date.strftime('%Y-%m-%d')} → {event.end_date.strftime('%Y-%m-%d')}  |  "
-                f"{event.attendees} attendees",
+                f"[{event.id}]  {event.location}"
+                f"  |  {event.start_date.strftime('%Y-%m-%d')} → {event.end_date.strftime('%Y-%m-%d')}"
+                f"  |  {event.attendees} attendees",
             )
         print_option("Q", "Cancel")
         raw = prompt("Select an event").strip().upper()
