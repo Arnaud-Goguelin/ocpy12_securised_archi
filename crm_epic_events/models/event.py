@@ -3,11 +3,11 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from event.schemas import EventUpdateInput
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid, select
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
+from crm_epic_events.services.event.schemas import EventUpdateInput
 
 
 if TYPE_CHECKING:
