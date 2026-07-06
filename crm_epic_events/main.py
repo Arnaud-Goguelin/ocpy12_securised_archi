@@ -18,11 +18,20 @@ class Application:
     def run(self):
         # setup_database()
         try:
-            self.controller.handle_main_menu()
-        except Exception as error:
-            print_unexpected_error(str(error), GenericMessages.MAIN_MENU_RETURN)
-            if Config.APP_ENV == "local":
-                print_info(traceback.format_exc())
-            self.controller.handle_main_menu()
+            while True:
+                try:
+                    self.controller.handle_main_menu()
+                    break
+                except Exception as error:
+                    print_unexpected_error(str(error), GenericMessages.MAIN_MENU_RETURN)
+                    if Config.APP_ENV == "local":
+                        print_info(traceback.format_exc())
+                    # do not recall self.controller.handle_main_menu()
+                    # but let while true loop continue
+                    # because if handle_main_menu re raise an error,
+                    # to recall it would not let a recursion error raise
+                    continue
         finally:
+            # close DB only when app exits
+            # otherwise, session would be closed before handle_main_menu returns or raises an error
             self.db.close()
