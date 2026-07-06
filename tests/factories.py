@@ -10,6 +10,7 @@ from crm_epic_events.utils import Roles
 fake = Faker()
 SECURED_RAW_PASSWORD = fake.password() + "1*"
 UNSECURED_RAW_PASSWORD = "azerty"
+VAT_NUMBER = "FR0123456789"
 
 
 class UserFactory(factory.Factory):
@@ -36,7 +37,7 @@ class CustomerFactory(factory.Factory):
 
     id = factory.Faker("uuid4")
     salesperson_id = factory.Faker("uuid4")
-    company_vat = factory.Faker("bothify", text="FR##########")
+    company = factory.SubFactory(CompanyFactory)
     email = factory.Faker("email")
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
