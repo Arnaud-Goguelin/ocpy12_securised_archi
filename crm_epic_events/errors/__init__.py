@@ -4,7 +4,7 @@ from .authentication_errors import (
     CustomInvalidTokenError,
     UserNotAuthenticatedError,
     )
-from .user_errors import UserAlreadyExistsError
+from .user_errors import UserAlreadyExistsError, PasswordNotSecuredError
 from .permissions_errors import UserNotAllowedError, UserIsNotOwnerError
 from .company_errors import CompanyAlreadyExistsError
 from .contract_errors import (

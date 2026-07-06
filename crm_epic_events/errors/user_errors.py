@@ -9,3 +9,9 @@ class UserAlreadyExistsError(CustomUserError):
     def __init__(self, **kwargs):
         kwargs.setdefault("message", "A user with this email already exists.")
         super().__init__(**kwargs)
+
+
+class PasswordNotSecuredError(CustomUserError):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("message", "Password is not secure.")
+        super().__init__(**kwargs)
