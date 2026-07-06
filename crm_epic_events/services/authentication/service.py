@@ -138,11 +138,14 @@ class AuthService:
             return User.get_by_id(payload["id"], db)
         except ExpiredSignatureError:
             return cls._refresh(tokens, db)
+        except NoResultFound:
+            AuthTokensService.clear_tokens()
+            raise CustomInvalidTokenError(message="Session refers to a deleted user.") from None
         except JWTInvalidTokenError:
             raise CustomInvalidTokenError() from None
 
     @staticmethod
-    def _refresh(tokens: dict, db: "Session") -> "User | None ":
+    def _refresh(tokens: dict, db: "Session") -> "User | None":
         """
         Silently issues a new access token using the refresh token.
         Returns the User if successful, None if refresh token is also expired.
@@ -150,12 +153,12 @@ class AuthService:
         try:
             payload = decode(tokens["refresh_token"], Config.SECRET_KEY, algorithms=[Config.AUTH_ALGORITHM])
             user = User.get_by_id(payload["id"], db)
-            if not user:
-                AuthTokensService.clear_tokens()
-                return None
             new_access_token = AuthTokensService.generate_access_token(user)
             AuthTokensService.save_tokens(new_access_token, tokens["refresh_token"])
             return user
+        except NoResultFound:
+            AuthTokensService.clear_tokens()
+            return None
         except (ExpiredSignatureError, JWTInvalidTokenError):
             AuthTokensService.clear_tokens()
             return None
