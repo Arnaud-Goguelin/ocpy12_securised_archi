@@ -8,7 +8,7 @@ from sqlalchemy.exc import NoResultFound
 from crm_epic_events.errors import CustomInvalidCredentialsError, CustomInvalidTokenError
 from crm_epic_events.models import User
 from crm_epic_events.services.authentication.service import AuthService, AuthTokensService
-from tests.factories import RAW_PASSWORD
+from tests.factories import SECURED_RAW_PASSWORD
 
 
 # ── login ────────────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ class TestLogin:
         with (
             patch.object(User, "get_by_email", return_value=user),
         ):
-            result = AuthService.login(user.email, RAW_PASSWORD, mock_db)
+            result = AuthService.login(user.email, SECURED_RAW_PASSWORD, mock_db)
 
         assert result == user
         tokens = AuthTokensService.load_tokens()
@@ -39,7 +39,7 @@ class TestLogin:
             patch.object(User, "get_by_email", side_effect=NoResultFound()),
             pytest.raises(CustomInvalidCredentialsError),
         ):
-            AuthService.login("ghost@test.com", RAW_PASSWORD, mock_db)
+            AuthService.login("ghost@test.com", SECURED_RAW_PASSWORD, mock_db)
 
 
 # ── get_current_user ──────────────────────────────────────────────────────────

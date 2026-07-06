@@ -4,11 +4,12 @@ from unittest.mock import patch
 import bcrypt
 import pytest
 
+from crm_epic_events.errors import PasswordNotSecuredError, UserAlreadyExistsError
 from crm_epic_events.models import User
 from crm_epic_events.services.user.schemas import UserAssignRoleInput, UserRegisterInput, UserUpdateInput
 from crm_epic_events.services.user.service import UserService
 from crm_epic_events.utils import Roles
-from tests.factories import UserFactory
+from tests.factories import SECURED_RAW_PASSWORD, UNSECURED_RAW_PASSWORD, UserFactory
 
 
 # ── get_all ───────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ class TestRegister:
             first_name="John",
             last_name="Doe",
             email="john.doe@example.com",
-            password="securepassword",
+            password=SECURED_RAW_PASSWORD,
         )
         created_user = UserFactory()
 
@@ -73,7 +74,7 @@ class TestRegister:
             first_name="Jane",
             last_name="Doe",
             email="jane.doe@example.com",
-            password="securepassword",
+            password=SECURED_RAW_PASSWORD,
         )
         created_user = UserFactory()
 
@@ -84,29 +85,29 @@ class TestRegister:
             UserService.register(data, mock_db)
 
         _, _, _, hashed, _ = mock_create.call_args.args
-        assert bcrypt.checkpw(b"securepassword", hashed.encode())
+        assert bcrypt.checkpw(SECURED_RAW_PASSWORD.encode(), hashed.encode())
 
     def test_register_raises_if_email_already_in_use(self, mock_db, user):
         data = UserRegisterInput(
             first_name="John",
             last_name="Doe",
             email=user.email,
-            password="securepassword",
+            password=SECURED_RAW_PASSWORD,
         )
 
         with (
             patch.object(User, "get_by_email", return_value=user),
-            pytest.raises(ValueError, match="already in use"),
+            pytest.raises(UserAlreadyExistsError),
         ):
             UserService.register(data, mock_db)
 
-    def test_register_password_too_short_raises(self):
-        with pytest.raises(ValueError, match="at least 8 characters"):
+    def test_register_password_unsecured_raises(self):
+        with pytest.raises(PasswordNotSecuredError):
             UserRegisterInput(
                 first_name="John",
                 last_name="Doe",
                 email="john@example.com",
-                password="short",
+                password=UNSECURED_RAW_PASSWORD,
             )
 
 
@@ -169,18 +170,18 @@ class TestUpdateProfile:
 
     def test_password_is_hashed_on_update(self, mock_db):
         user = UserFactory(role=Roles.SALES)
-        data = UserUpdateInput(password="newpassword123")
+        data = UserUpdateInput(password=SECURED_RAW_PASSWORD)
 
         with patch.object(User, "update", return_value=user) as mock_update:
             UserService.update_profile(user, user, data, mock_db)
 
         # patch.object on an instance method: args[0] is data
         passed_data: UserUpdateInput = mock_update.call_args.args[0]
-        assert bcrypt.checkpw(b"newpassword123", passed_data.password.encode())
+        assert bcrypt.checkpw(SECURED_RAW_PASSWORD.encode(), passed_data.password.encode())
 
-    def test_update_password_too_short_raises(self):
-        with pytest.raises(ValueError, match="at least 8 characters"):
-            UserUpdateInput(password="short")
+    def test_update_password_unsecured_raises(self):
+        with pytest.raises(PasswordNotSecuredError):
+            UserUpdateInput(password=UNSECURED_RAW_PASSWORD)
 
 
 # ── assign_role ───────────────────────────────────────────────────────────────

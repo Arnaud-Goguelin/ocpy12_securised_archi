@@ -8,7 +8,8 @@ from crm_epic_events.utils import Roles
 
 
 fake = Faker()
-RAW_PASSWORD = fake.password()
+SECURED_RAW_PASSWORD = fake.password() + "1*"
+UNSECURED_RAW_PASSWORD = "azerty"
 
 
 class UserFactory(factory.Factory):
@@ -17,7 +18,7 @@ class UserFactory(factory.Factory):
 
     id = factory.Faker("uuid4")
     email = factory.Faker("email")
-    password = factory.LazyFunction(lambda: bcrypt.hashpw(RAW_PASSWORD.encode(), bcrypt.gensalt()).decode())
+    password = factory.LazyFunction(lambda: bcrypt.hashpw(SECURED_RAW_PASSWORD.encode(), bcrypt.gensalt()).decode())
     role = Roles.MANAGER
 
 
