@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from crm_epic_events.utils import StandardInputs
 from crm_epic_events.utils.printers import print_error, print_info, print_option, print_success, print_title, prompt
 
 
@@ -54,9 +55,9 @@ class EventView:
                 f"  |  {event.start_date.strftime('%Y-%m-%d')} → {event.end_date.strftime('%Y-%m-%d')}"
                 f"  |  {event.attendees} attendees",
             )
-        print_option("Q", "Cancel")
+        print_option(StandardInputs.CANCELLED, "Cancel")
         raw = prompt("Select an event").strip().upper()
-        if raw == "Q":
+        if raw == StandardInputs.CANCELLED:
             return None
         try:
             return events[int(raw) - 1]

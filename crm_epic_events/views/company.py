@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from crm_epic_events.utils import StandardInputs
 from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt
 
 
@@ -26,10 +27,10 @@ class CompanyView:
         return {"name": value} if value else {}
 
     @staticmethod
-    def prompt_select_company(companies: list["Company"]) -> "Company | None":
+    def prompt_select_company(companies: list["Company"]) -> str:
         for i, company in enumerate(companies, start=1):
             print_option(str(i), f"{company.name}  |  VAT: {company.vat_number}")
-        print_option("Q", "Cancel")
+        print_option(StandardInputs.CANCELLED, "Cancel")
         return prompt("Select a company").strip().upper()
 
     # --- Display ---

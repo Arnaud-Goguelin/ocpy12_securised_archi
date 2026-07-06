@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from crm_epic_events.utils.constants import Roles
+from crm_epic_events.utils.constants import Roles, StandardInputs
 from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt
 
 
@@ -55,7 +55,7 @@ class UserView:
         """Displays a numbered list and returns the raw input string."""
         for i, user in enumerate(users, start=1):
             print_option(str(i), f"{user.first_name} {user.last_name}  |  {user.email}  |  {user.role}")
-        print_option("Q", "Cancel")
+        print_option(StandardInputs.CANCELLED, "Cancel")
         return prompt("Select a user").strip().upper()
 
     # --- Display ---

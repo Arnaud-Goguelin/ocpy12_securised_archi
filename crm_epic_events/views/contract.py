@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from crm_epic_events.utils import StandardInputs
 from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt
 
 
@@ -57,9 +58,9 @@ class ContractView:
                 f"  |  Total: {contract.total_amount}  |  Remaining: {contract.remaining_amount}"
                 f"  |  Signed: {'Yes' if contract.status else 'No'}",
             )
-        print_option("Q", "Cancel")
+        print_option(StandardInputs.CANCELLED, "Cancel")
         raw = prompt("Select a contract").strip().upper()
-        if raw == "Q":
+        if raw == StandardInputs.CANCELLED:
             return None
         try:
             return contracts[int(raw) - 1]

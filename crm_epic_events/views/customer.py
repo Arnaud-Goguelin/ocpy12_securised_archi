@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from crm_epic_events.utils import StandardInputs
 from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt
 
 
@@ -46,7 +47,7 @@ class CustomerView:
                 str(i),
                 f"{customer.first_name} {customer.last_name}  |  {customer.email}  |  {customer.company_vat}",
             )
-        print_option("Q", "Cancel")
+        print_option(StandardInputs.CANCELLED, "Cancel")
         return prompt("Select a customer").strip().upper()
 
     # --- Display ---
