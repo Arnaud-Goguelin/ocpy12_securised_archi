@@ -3,8 +3,9 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from event.schemas import EventUpdateInput
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid, select
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
 
@@ -114,3 +115,66 @@ class Event(Base):
     location: Mapped[str] = mapped_column(String)
     attendees: Mapped[int] = mapped_column(Integer)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    @classmethod
+    def get_all(cls, db: "Session") -> list["Event"]:
+        query = select(cls)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def get_by_id(cls, event_id: uuid.UUID, db: "Session") -> "Event | None":
+        query = select(cls).filter_by(id=event_id)
+        result = db.execute(query)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    def get_all_without_support(cls, db: "Session") -> list["Event"]:
+        query = select(cls).where(cls.support_id.is_(None))
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def get_all_by_support(cls, support_id: uuid.UUID, db: "Session") -> list["Event"]:
+        query = select(cls).filter_by(support_id=support_id)
+        result = db.execute(query)
+        return list(result.scalars().all())
+
+    @classmethod
+    def create(
+        cls,
+        contract_id: uuid.UUID,
+        customer_id: uuid.UUID,
+        start_date: datetime,
+        end_date: datetime,
+        location: str,
+        attendees: int,
+        db: "Session",
+        support_id: uuid.UUID | None = None,
+        notes: str | None = None,
+    ) -> "Event":
+        event = cls(
+            contract_id=contract_id,
+            customer_id=customer_id,
+            support_id=support_id,
+            start_date=start_date,
+            end_date=end_date,
+            location=location,
+            attendees=attendees,
+            notes=notes,
+        )
+        db.add(event)
+        db.flush()
+        db.refresh(event)
+        return event
+
+    def update(self, data: EventUpdateInput, db: "Session") -> "Event":
+        for key, value in data.model_dump(exclude_none=True).items():
+            setattr(self, key, value)
+        db.flush()
+        db.refresh(self)
+        return self
+
+    def delete(self, db: "Session") -> None:
+        db.delete(self)
+        db.flush()
