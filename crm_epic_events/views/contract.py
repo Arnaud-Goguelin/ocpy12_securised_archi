@@ -16,16 +16,10 @@ class ContractView:
         print_title("Create new contract")
         for i, customer in enumerate(customers, start=1):
             print_option(str(i), f"{customer.first_name} {customer.last_name}  |  {customer.email}")
-        raw = prompt("Select a customer").strip()
-        try:
-            customer = customers[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
-
-        return {
-            "customer_id": customer.id,
-            "total_amount": prompt("Total amount").strip(),  # return a str but Pydantic will convert it to Decimal
-            "remaining_amount": prompt("Total amount").strip(),
+        raw_customer = prompt("Select a customer").strip()
+        return raw_customer, {
+            "total_amount": prompt("Total amount").strip(),
+            "remaining_amount": prompt("Remaining amount").strip(),
             "status": prompt("Already signed? (y/N)").strip().lower() == "y",
         }
 
@@ -50,22 +44,16 @@ class ContractView:
         return data
 
     @staticmethod
-    def prompt_select_contract(contracts: list["Contract"]) -> "Contract | None":
+    def prompt_select_contract(contracts: list["Contract"]) -> str:
         for i, contract in enumerate(contracts, start=1):
             print_option(
                 str(i),
-                f"ID: {contract.id[:8]}…  |  Customer: {contract.customer_id}"
+                f"ID: {contract.id}  |  Customer: {contract.customer_id}"
                 f"  |  Total: {contract.total_amount}  |  Remaining: {contract.remaining_amount}"
                 f"  |  Signed: {'Yes' if contract.status else 'No'}",
             )
         print_option(StandardInputs.CANCELLED, "Cancel")
-        raw = prompt("Select a contract").strip().upper()
-        if raw == StandardInputs.CANCELLED:
-            return None
-        try:
-            return contracts[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
+        return prompt("Select a contract").strip().upper()
 
     # --- Display ---
 
@@ -77,9 +65,10 @@ class ContractView:
             return
         for contract in contracts:
             print_info(
-                f"  ID: {contract.id[:8]}…"
-                f"  |  Customer: {contract.customer_id}"
-                f"  |  Salesperson: {contract.salesperson_id}"
+                f"  ID: {contract.id}"
+                f"  |  Customer: {contract.customer.first_name} {contract.customer.last_name} {contract.customer.id}"
+                f"  |  Salesperson: {contract.salesperson.first_name} {contract.salesperson.last_name} "
+                f"{contract.salesperson.id}"
                 f"  |  Total: {contract.total_amount:.2f}"
                 f"  |  Remaining: {contract.remaining_amount:.2f}"
                 f"  |  Signed: {'Yes' if contract.status else 'No'}"
