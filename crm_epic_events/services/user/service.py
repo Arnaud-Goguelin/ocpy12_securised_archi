@@ -8,14 +8,13 @@ from sqlalchemy.exc import NoResultFound
 
 from crm_epic_events.errors import UserAlreadyExistsError
 from crm_epic_events.models import User
-from crm_epic_events.services import UserAssignRoleInput
 from crm_epic_events.utils import Roles, db_transaction
 
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
-    from crm_epic_events.services.user.schemas import UserRegisterInput, UserUpdateInput
+    from crm_epic_events.services.user.schemas import UserAssignRoleInput, UserRegisterInput, UserUpdateInput
 
 
 class UserService:

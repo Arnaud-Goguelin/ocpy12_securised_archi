@@ -6,8 +6,7 @@ from sqlalchemy import String, Uuid, select
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
-from crm_epic_events.services import UserAssignRoleInput
-from crm_epic_events.services.user.schemas import UserUpdateInput
+from crm_epic_events.services.user.schemas import UserAssignRoleInput, UserUpdateInput
 from crm_epic_events.utils.constants import Roles
 
 
