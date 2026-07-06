@@ -8,6 +8,7 @@ from crm_epic_events.controllers.contract import ContractController
 from crm_epic_events.controllers.customer import CustomerController
 from crm_epic_events.controllers.user import UserController
 from crm_epic_events.errors import CustomAuthenticationError
+from crm_epic_events.errors.user_errors import CustomUserError
 from crm_epic_events.models import User
 from crm_epic_events.services import UserRegisterInput, UserService
 from crm_epic_events.services.authentication.service import AuthService
@@ -86,8 +87,8 @@ class MainController(BaseController):
             print_success("A MANAGER will assign your role. You can now log in.")
         except ValidationError as error:
             print_validation_errors(error)
-        except ValueError as error:
-            print_error(str(error))
+        except CustomUserError as error:
+            print_error(error.message)
 
     def handle_customers_menu(self):
         controller = CustomerController(self.db, self.user)
