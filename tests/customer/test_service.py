@@ -2,12 +2,13 @@ import uuid
 
 from unittest.mock import MagicMock, patch
 
+from crm_epic_events.models import Company
 from crm_epic_events.models.customer import Customer
 from crm_epic_events.services.company.service import CompanyService
 from crm_epic_events.services.customer.schemas import CustomerCreateInput, CustomerUpdateInput
 from crm_epic_events.services.customer.service import CustomerService
 from crm_epic_events.utils import Roles
-from tests.factories import CompanyFactory, CustomerFactory, UserFactory
+from tests.factories import VAT_NUMBER, CompanyFactory, CustomerFactory, UserFactory
 
 
 # ── get_all ───────────────────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ class TestCreate:
     def _make_data(self, **kwargs) -> CustomerCreateInput:
         data = CustomerCreateInput(
             salesperson_id=uuid.uuid4(),
-            company_vat="FR0123456789",
+            company_vat=VAT_NUMBER,
             company_name="Acme Corp",
             email="john.doe@example.com",
             first_name="John",
@@ -80,7 +81,7 @@ class TestCreate:
 
     def test_create_uses_existing_company(self, mock_db):
         sales_user = UserFactory(role=Roles.SALES)
-        existing_company = CompanyFactory(vat_number="FR0123456789")
+        existing_company = CompanyFactory(vat_number=VAT_NUMBER)
         data = self._make_data()
         created_customer = CustomerFactory()
 
@@ -97,7 +98,7 @@ class TestCreate:
 
     def test_create_auto_creates_company_when_not_found(self, mock_db):
         sales_user = UserFactory(role=Roles.SALES)
-        new_company = CompanyFactory(vat_number="FR0123456789")
+        new_company = CompanyFactory(vat_number=VAT_NUMBER)
         data = self._make_data()
         created_customer = CustomerFactory()
 
@@ -113,7 +114,7 @@ class TestCreate:
 
     def test_create_passes_correct_args_to_customer_model(self, mock_db):
         sales_user = UserFactory(role=Roles.SALES)
-        existing_company = CompanyFactory(vat_number="FR0123456789")
+        existing_company = CompanyFactory(vat_number=VAT_NUMBER)
         data = self._make_data()
         created_customer = CustomerFactory()
 
@@ -136,8 +137,8 @@ class TestCreate:
     def test_create_uses_auto_created_company_vat(self, mock_db):
         """When the company is auto-created, the new company's vat_number must be used."""
         sales_user = UserFactory(role=Roles.SALES)
-        new_company = CompanyFactory(vat_number="FR0123456789")
-        data = self._make_data(company_vat="FR0123456789")
+        new_company = CompanyFactory(vat_number=VAT_NUMBER)
+        data = self._make_data(company_vat=VAT_NUMBER)
         created_customer = CustomerFactory()
 
         with (
@@ -193,17 +194,54 @@ class TestUpdate:
 
 class TestDelete:
     def test_delete_calls_delete_on_target(self, mock_db):
+        """Customer.delete() must be called on the target."""
         target = CustomerFactory()
-        target.delete = MagicMock(return_value=None)
+        target.delete = MagicMock()
 
-        CustomerService.delete(target, mock_db)
+        with (
+            patch.object(Customer, "get_all_by_company_vat", return_value=[]),
+            patch.object(Company, "delete_by_vat"),
+        ):
+            CustomerService.delete(target, mock_db)
 
         target.delete.assert_called_once_with(mock_db)
 
+    def test_delete_removes_orphan_company(self, mock_db):
+        """When no other customer shares the company, delete_by_vat must be called."""
+        target = CustomerFactory()
+        target.delete = MagicMock()
+
+        with (
+            patch.object(Customer, "get_all_by_company_vat", return_value=[]) as mock_remaining,
+            patch.object(Company, "delete_by_vat") as mock_delete_company,
+        ):
+            CustomerService.delete(target, mock_db)
+
+        mock_remaining.assert_called_once_with(target.company_vat, mock_db)
+        mock_delete_company.assert_called_once_with(target.company_vat, mock_db)
+
+    def test_delete_keeps_company_when_other_customers_exist(self, mock_db):
+        """When other customers share the company, delete_by_vat must NOT be called."""
+        target = CustomerFactory()
+        other_customer = CustomerFactory(company_vat=target.company_vat)
+        target.delete = MagicMock()
+
+        with (
+            patch.object(Customer, "get_all_by_company_vat", return_value=[other_customer]),
+            patch.object(Company, "delete_by_vat") as mock_delete_company,
+        ):
+            CustomerService.delete(target, mock_db)
+
+        mock_delete_company.assert_not_called()
+
     def test_delete_returns_none(self, mock_db):
         target = CustomerFactory()
+        target.delete = MagicMock()
 
-        with patch.object(Customer, "delete", return_value=None):
+        with (
+            patch.object(Customer, "get_all_by_company_vat", return_value=[]),
+            patch.object(Company, "delete_by_vat"),
+        ):
             result = CustomerService.delete(target, mock_db)
 
         assert result is None
