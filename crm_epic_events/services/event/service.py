@@ -1,11 +1,14 @@
 import uuid
+
 from typing import TYPE_CHECKING
 
 from crm_epic_events.models import Event
 from crm_epic_events.utils import db_transaction
 
+
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
     from crm_epic_events.models import User
     from crm_epic_events.services.event.schemas import EventCreateInput, EventUpdateInput
 
@@ -39,7 +42,7 @@ class EventService:
             return Event.create(
                 contract_id=data.contract_id,
                 customer_id=data.customer_id,
-                support_contact_id=data.support_contact_id,
+                support_id=data.support_id,
                 start_date=data.start_date,
                 end_date=data.end_date,
                 location=data.location,
