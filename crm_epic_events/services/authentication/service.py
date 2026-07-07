@@ -1,3 +1,4 @@
+import contextlib
 import json
 import uuid
 
@@ -25,15 +26,15 @@ if TYPE_CHECKING:
 
 class AuthTokensService:
     @staticmethod
-    def _resolve_token_file() -> Path:
+    def _resolve_token_file(file_name: str = "session.json") -> Path:
         """
         Returns the token file path based on APP_ENV.
         - 'local': writes inside the app directory (visible via bind mount in Docker)
         - anything else ('prod', unset...): writes in the user config directory
         """
         if Config.APP_ENV == "local":
-            return Path("/usr/src/app") / ".session.json"
-        return Path.home() / ".config" / "crm_epic_events" / "session.json"
+            return Path("/usr/src/app") / file_name
+        return Path.home() / ".config" / "crm_epic_events" / file_name
 
     @staticmethod
     def generate_access_token(user: "User") -> str:
@@ -81,6 +82,45 @@ class AuthTokensService:
         token_file = cls._resolve_token_file()
         if token_file.exists():
             token_file.unlink()
+
+    @classmethod
+    def save_lockout(cls, duration_seconds: int) -> None:
+        token_file = cls._resolve_token_file(file_name="lockout.json")
+        token_file.parent.mkdir(parents=True, exist_ok=True)
+        existing = {}
+        if token_file.exists():
+            with contextlib.suppress(json.JSONDecodeError, OSError):
+                existing = json.loads(token_file.read_text())
+        existing["locked_until"] = (datetime.now(UTC) + timedelta(seconds=duration_seconds)).isoformat()
+        token_file.write_text(json.dumps(existing))
+
+    @classmethod
+    def get_lockout_remaining(cls) -> int:
+        """Returns the number of seconds remaining in lockout, or 0 if not locked."""
+        token_file = cls._resolve_token_file(file_name="lockout.json")
+        if not token_file.exists():
+            return 0
+        try:
+            data = json.loads(token_file.read_text())
+            locked_until = data.get("locked_until")
+            if not locked_until:
+                return 0
+            remaining = (datetime.fromisoformat(locked_until) - datetime.now(UTC)).total_seconds()
+            return max(0, int(remaining))
+        except (json.JSONDecodeError, OSError, ValueError):
+            return 0
+
+    @classmethod
+    def clear_lockout(cls) -> None:
+        token_file = cls._resolve_token_file(file_name="lockout.json")
+        if not token_file.exists():
+            return
+        try:
+            data = json.loads(token_file.read_text())
+            data.pop("locked_until", None)
+            token_file.write_text(json.dumps(data))
+        except (json.JSONDecodeError, OSError):
+            pass
 
 
 class AuthService:

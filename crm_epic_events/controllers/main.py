@@ -12,8 +12,9 @@ from crm_epic_events.errors import CustomAuthenticationError
 from crm_epic_events.errors.user_errors import CustomUserError
 from crm_epic_events.models import User
 from crm_epic_events.services import UserRegisterInput, UserService
-from crm_epic_events.services.authentication.service import AuthService
+from crm_epic_events.services.authentication.service import AuthService, AuthTokensService
 from crm_epic_events.utils import (
+    GenericMessages,
     MenuItem,
     StandardInputs,
     check_choice,
@@ -22,6 +23,7 @@ from crm_epic_events.utils import (
     print_success,
     print_validation_errors,
 )
+from crm_epic_events.utils.countdown import countdown
 from crm_epic_events.views import LoginView, MainMenuView, UserView
 
 
@@ -56,10 +58,17 @@ class MainController(BaseController):
             MenuItem("2", "Create account", self.handle_register),
             MenuItem(StandardInputs.CANCELLED, "Quit", self.exit_app),
         ]
+        self.auth_error_count = 0
 
     def handle_main_menu(self):
         while True:
             if not self.user:
+                remaining = AuthTokensService.get_lockout_remaining()
+                if remaining > 0:
+                    print_error(f"Too many failed login attempts. Please try again in {remaining}s.")
+                    countdown(GenericMessages.MAIN_MENU_RETURN, remaining)
+                    self.handle_main_menu()
+
                 choice = self.main_view.display(self.guest_menu_items)
                 item = check_choice(choice, self.guest_menu_items)
                 if item is not None:
@@ -75,8 +84,15 @@ class MainController(BaseController):
         email, password = self.login_view.display()
         try:
             self.user = AuthService.login(email, password, self.db)
+            self.auth_error_count = 0
+            AuthTokensService.clear_lockout()
             print_success("Login successful!")
         except CustomAuthenticationError as error:
+            self.auth_error_count += 1
+            if self.auth_error_count >= 3:
+                print_error("Too many failed login attempts. Please try again later.")
+                AuthTokensService.save_lockout(duration_seconds=40)
+                self.exit_app()
             self.login_view.display_error(error.message)
 
     def handle_register(self):
