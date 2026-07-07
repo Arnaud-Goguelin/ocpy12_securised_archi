@@ -4,14 +4,13 @@ from typing import TYPE_CHECKING
 
 from crm_epic_events.errors import CompanyAlreadyExistsError
 from crm_epic_events.models import Company
+from crm_epic_events.services.company.schemas import CompanyCreateInput, CompanyUpdateInput
 from crm_epic_events.services.customer.schemas import CustomerCreateInput
 from crm_epic_events.utils import db_transaction
 
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
-
-    from crm_epic_events.services.company.schemas import CompanyCreateInput, CompanyUpdateInput
 
 
 class CompanyService:
@@ -34,7 +33,11 @@ class CompanyService:
             raise CompanyAlreadyExistsError()
 
         with db_transaction(db, "Creating company"):
-            return Company.create(data.vat_number, data.name, db)
+            return Company.create(
+                data.vat_number,
+                data.name if isinstance(data, CompanyCreateInput) else data.company_name,
+                db,
+            )
 
     @staticmethod
     def update(
