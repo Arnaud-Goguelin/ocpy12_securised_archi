@@ -37,6 +37,6 @@ class CustomerResponse(BaseModel):
     phone: str
     company_name: str
     created_at: datetime
-    updated_at: datetime
+    last_updated_at: datetime
 
     model_config = {"from_attributes": True}
