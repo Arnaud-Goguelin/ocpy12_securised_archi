@@ -52,8 +52,8 @@ class Customer(Base):
     :type phone: str
     :ivar created_at: Timestamp of when the Customer was created.
     :type created_at: datetime with timezone
-    :ivar last_updated_at: Timestamp of when the Customer was last updated.
-    :type last_updated_at: datetime with timezone
+    :ivar last_last_updated_at: Timestamp of when the Customer was last updated.
+    :type last_last_updated_at: datetime with timezone
     """
 
     __tablename__ = "customers"

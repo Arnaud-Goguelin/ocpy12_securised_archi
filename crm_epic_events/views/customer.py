@@ -64,5 +64,5 @@ class CustomerView:
                 f"  |  {customer.email}"
                 f"  |  {customer.phone}"
                 f"  |  VAT: {customer.company_vat}"
-                f"  |  updated: {customer.updated_at.strftime('%Y-%m-%d')}"
+                f"  |  updated: {customer.last_updated_at.strftime('%Y-%m-%d')}"
             )
