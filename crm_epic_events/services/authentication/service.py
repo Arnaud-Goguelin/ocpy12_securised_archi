@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from crm_epic_events.config import Config
 from crm_epic_events.errors import CustomInvalidCredentialsError, CustomInvalidTokenError
 from crm_epic_events.models.user import User
-from crm_epic_events.utils import exit_app, print_success
+from crm_epic_events.utils import print_success
 
 from .schemas import AccessTokenPayload, RefreshTokenPayload
 
@@ -121,7 +121,6 @@ class AuthService:
     def logout() -> None:
         AuthTokensService.clear_tokens()
         print_success("Logged out successfully")
-        exit_app()
 
     @classmethod
     def get_current_user(cls, db) -> "User | None ":
