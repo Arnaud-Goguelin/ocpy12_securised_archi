@@ -21,7 +21,7 @@ class EventView:
         for i, contract in enumerate(contracts, start=1):
             print_option(
                 str(i),
-                f"Contract {str(contract.id)[:8]}…"
+                f"Contract {str(contract.id)}"
                 f"  |  Customer: {contract.customer.first_name} {contract.customer.last_name}",
             )
         raw_contract = prompt("Select a contract").strip()
