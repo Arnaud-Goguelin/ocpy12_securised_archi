@@ -213,3 +213,4 @@ ToDo.txt
 requests.http
 gitignore/
 .session.json
+.lockout.json
