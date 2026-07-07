@@ -3,8 +3,48 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from crm_epic_events.models.database import Base
+from crm_epic_events.services import CustomerCreateInput, EventCreateInput, UserRegisterInput
 from crm_epic_events.services.authentication.service import AuthTokensService
-from tests.factories import UserFactory
+from crm_epic_events.utils import Roles
+from tests.factories import (
+    SECURED_RAW_PASSWORD,
+    VAT_NUMBER,
+    CompanyDBFactory,
+    ContractDBFactory,
+    CustomerDBFactory,
+    EventDBFactory,
+    UserDBFactory,
+    UserFactory,
+    fake,
+)
+
+
+# ===== db fixtures to test persistence (services and models) in DB =====
+@pytest.fixture
+def db_session():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    session = sessionmaker(bind=engine)()
+    yield session
+    session.rollback()
+    session.close()
+    Base.metadata.drop_all(engine)
+
+
+@pytest.fixture(autouse=True)
+def setup_db_factories(db_session):
+    UserDBFactory._meta.sqlalchemy_session = db_session
+    CompanyDBFactory._meta.sqlalchemy_session = db_session
+    CustomerDBFactory._meta.sqlalchemy_session = db_session
+    ContractDBFactory._meta.sqlalchemy_session = db_session
+    EventDBFactory._meta.sqlalchemy_session = db_session
+
+
+# ===== db mock to test without persistence (controllers) in DB =====
 
 
 @pytest.fixture
@@ -15,6 +55,9 @@ def mock_db():
 @pytest.fixture
 def user():
     return UserFactory()
+
+
+# ===== auth fixtures =====
 
 
 @pytest.fixture
@@ -45,3 +88,62 @@ def clear_tokens():
     AuthTokensService.clear_tokens()
     yield
     AuthTokensService.clear_tokens()
+
+
+# ===== Customer fixtures =====
+@pytest.fixture
+def salesperson(db_session):
+    return UserDBFactory(role=Roles.SALES)
+
+
+@pytest.fixture
+def customer_create_data(salesperson):
+    return CustomerCreateInput(
+        salesperson_id=salesperson.id,
+        vat_number=VAT_NUMBER,
+        company_name=fake.company(),
+        email=fake.email(),
+        first_name=fake.first_name(),
+        last_name=fake.last_name(),
+        phone=fake.phone_number(),
+    )
+
+
+# ===== User fixtures =====
+
+
+@pytest.fixture
+def register_data() -> UserRegisterInput:
+    return UserRegisterInput(
+        first_name=fake.first_name(),
+        last_name=fake.last_name(),
+        email=fake.email(),
+        password=SECURED_RAW_PASSWORD,
+    )
+
+
+# === Event fixtures ===
+
+
+@pytest.fixture
+def signed_contract():
+    return ContractDBFactory(status=True)
+
+
+@pytest.fixture
+def unsigned_contract():
+    return ContractDBFactory(status=False)
+
+
+@pytest.fixture
+def event_create_data(signed_contract):
+    return EventCreateInput(
+        contract_id=signed_contract.id,
+        customer_id=signed_contract.customer_id,
+        support_id=None,
+        start_date=fake.date_time_this_year(tzinfo=__import__("datetime").timezone.utc),
+        end_date=fake.future_datetime(tzinfo=__import__("datetime").timezone.utc),
+        location=fake.city(),
+        attendees=fake.pyint(min_value=1, max_value=500),
+        notes=None,
+    )
