@@ -57,7 +57,7 @@ class CustomerController(BaseController):
     def handle_create(self) -> NavSignal:
         raw = self.view.prompt_create()
         try:
-            data = CustomerCreateInput(**raw)
+            data = CustomerCreateInput(salesperson_id=self.user.id, **raw)
             customer = CustomerService.create(self.user, data, self.db)
             print_success(f"Customer '{customer.first_name} {customer.last_name}' created successfully.")
         except ValidationError as error:
