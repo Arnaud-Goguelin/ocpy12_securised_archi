@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import UserIsNotOwnerError
 from crm_epic_events.permissions import require_roles
-from crm_epic_events.services import ContractService, CustomerService
+from crm_epic_events.services import ContractService, CustomerService, UserService
 from crm_epic_events.services.contract.schemas import ContractCreateInput, ContractUpdateInput
 from crm_epic_events.utils import check_choice
 from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
@@ -68,20 +68,28 @@ class ContractController(BaseController):
     @require_roles(Roles.MANAGER)
     def handle_create(self) -> NavSignal:
         customers = CustomerService.get_all(self.db)
+        salespersons = UserService.get_all_by_role(Roles.SALES, self.db)
+
         if not customers:
             print_error("No customers found. Please create a customer first.")
             return NavSignal.STAY
 
-        raw_customer, raw_data = self.view.prompt_create(customers)
+        raw_customer, raw_salesperson, raw_data = self.view.prompt_create(customers, salespersons)
+
         try:
             customer = customers[int(raw_customer) - 1]
         except (ValueError, IndexError):
             print_error(f"Invalid selection: '{raw_customer}'")
             return NavSignal.STAY
 
-        raw_data["customer_id"] = str(customer.id)
         try:
-            data = ContractCreateInput(**raw_data)
+            salesperson = salespersons[int(raw_salesperson) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw_salesperson}'")
+            return NavSignal.STAY
+
+        try:
+            data = ContractCreateInput(customer_id=customer.id, salesperson_id=salesperson.id, **raw_data)
             contract = ContractService.create(customer, data, self.db)
             print_success(f"Contract '{contract.id}' created successfully.")
         except ValidationError as error:
