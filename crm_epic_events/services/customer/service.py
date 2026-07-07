@@ -29,9 +29,9 @@ class CustomerService:
         """
 
         # Auto-create company if not found — stays in the same transaction
-        company = CompanyService.get_by_vat(data.company_vat, db)
+        company = CompanyService.get_by_vat(data.vat_number, db)
         if not company:
-            company = CompanyService.create(current_user, data, db)
+            company = CompanyService.create(data, db)
 
         with db_transaction(db, "Creating customer"):
             return Customer.create(
