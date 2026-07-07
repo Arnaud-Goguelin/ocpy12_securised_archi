@@ -79,7 +79,7 @@ class TestHandleUpdateProfileOther:
         ctrl.view.prompt_update_profile = MagicMock(return_value={"first_name": "Updated"})
 
         with (
-            patch.object(UserService, "get_all", return_value=[other_user]),
+            patch.object(UserService, "get_all", return_value=[other_user, manager]),
             patch.object(UserService, "update_profile", return_value=other_user),
         ):
             signal = ctrl.handle_update_profile_other()
@@ -103,7 +103,7 @@ class TestHandleUpdateProfileOther:
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value=StandardInputs.CANCELLED)
 
-        with patch.object(UserService, "get_all", return_value=[]):
+        with patch.object(UserService, "get_all", return_value=[manager]):
             signal = ctrl.handle_update_profile_other()
 
         assert signal == NavSignal.STAY
@@ -114,7 +114,7 @@ class TestHandleUpdateProfileOther:
         users = UserFactory.build_batch(2)
         ctrl.view.prompt_select_user = MagicMock(return_value="invalid")
 
-        with patch.object(UserService, "get_all", return_value=users):
+        with patch.object(UserService, "get_all", return_value=[*users, manager]):
             signal = ctrl.handle_update_profile_other()
 
         assert signal == NavSignal.STAY
@@ -126,7 +126,7 @@ class TestHandleUpdateProfileOther:
         ctrl.view.prompt_select_user = MagicMock(return_value="1")
         ctrl.view.prompt_update_profile = MagicMock(return_value={})
 
-        with patch.object(UserService, "get_all", return_value=[other_user]):
+        with patch.object(UserService, "get_all", return_value=[other_user, manager]):
             signal = ctrl.handle_update_profile_other()
 
         assert signal == NavSignal.STAY
@@ -208,7 +208,7 @@ class TestHandleDelete:
         ctrl.view.prompt_select_user = MagicMock(return_value="1")
 
         with (
-            patch.object(UserService, "get_all", return_value=[target]),
+            patch.object(UserService, "get_all", return_value=[target, manager]),
             patch.object(UserService, "delete") as mock_delete,
         ):
             signal = ctrl.handle_delete()
@@ -233,7 +233,7 @@ class TestHandleDelete:
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value=StandardInputs.CANCELLED)
 
-        with patch.object(UserService, "get_all", return_value=[]):
+        with patch.object(UserService, "get_all", return_value=[manager]):
             signal = ctrl.handle_delete()
 
         assert signal == NavSignal.STAY
@@ -244,7 +244,7 @@ class TestHandleDelete:
         users = UserFactory.build_batch(2)
         ctrl.view.prompt_select_user = MagicMock(return_value="invalid")
 
-        with patch.object(UserService, "get_all", return_value=users):
+        with patch.object(UserService, "get_all", return_value=[*users, manager]):
             signal = ctrl.handle_delete()
 
         assert signal == NavSignal.STAY

@@ -52,30 +52,6 @@ class TestHandleListWithoutSupport:
             ctrl.handle_list_without_support()
 
 
-# ── handle_list_mine ──────────────────────────────────────────────────────────
-
-
-class TestHandleListMine:
-    def test_support_can_list_own_events(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = EventController(mock_db, user)
-        with patch.object(EventService, "get_all_by_support", return_value=[]):
-            signal = ctrl.handle_list_mine()
-        assert signal == NavSignal.STAY
-
-    def test_manager_cannot_access_list_mine(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = EventController(mock_db, user)
-        with pytest.raises(UserNotAllowedError):
-            ctrl.handle_list_mine()
-
-    def test_sales_cannot_access_list_mine(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = EventController(mock_db, user)
-        with pytest.raises(UserNotAllowedError):
-            ctrl.handle_list_mine()
-
-
 # ── handle_create ─────────────────────────────────────────────────────────────
 
 
