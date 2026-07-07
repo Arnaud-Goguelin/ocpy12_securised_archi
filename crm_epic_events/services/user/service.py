@@ -38,7 +38,7 @@ class UserService:
         Public registration — no auth required.
         Role defaults to SALES, a MANAGER must assign the real role afterwards.
         """
-
+        user = None
         with contextlib.suppress(NoResultFound):
             user = User.get_by_email(data.email, db)
 
