@@ -19,7 +19,7 @@ class CustomerView:
             "last_name": prompt("Last name").strip(),
             "email": prompt("Email").strip(),
             "phone": prompt("Phone").strip(),
-            "company_vat": prompt("Company VAT number").strip(),
+            "vat_number": prompt("Company VAT number").strip(),
             "company_name": prompt("Company name (created if not found)").strip(),
         }
 
