@@ -29,7 +29,10 @@ class ContractView:
             {
                 "total_amount": prompt("Total amount").strip(),
                 "remaining_amount": prompt("Remaining amount").strip(),
-                "status": prompt("Already signed? (y/N)").strip().lower() == "y",
+                "status": prompt(f"Already signed? ({StandardInputs.VALIDATION}/{StandardInputs.CANCELLED})")
+                .strip()
+                .lower()
+                == StandardInputs.VALIDATION,
             },
         )
 
@@ -48,8 +51,8 @@ class ContractView:
             data["remaining_amount"] = raw_remaining
 
         raw_status = prompt(f"Signed? (current: {'Yes' if target.status else 'No'}) (y/n)").strip().lower()
-        if raw_status in ("y", "n"):
-            data["status"] = raw_status == "y"
+        if raw_status in (StandardInputs.VALIDATION, StandardInputs.CANCELLED):
+            data["status"] = raw_status == StandardInputs.VALIDATION
 
         return data
 
