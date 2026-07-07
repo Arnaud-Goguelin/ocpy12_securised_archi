@@ -4,8 +4,7 @@ from crm_epic_events.config import Config
 from crm_epic_events.controllers import MainController
 from crm_epic_events.errors import CustomAuthenticationError
 from crm_epic_events.models.database import get_db
-
-# from crm_epic_events.models.start_tasks import setup_database
+from crm_epic_events.models.start_tasks import setup_database
 from crm_epic_events.services.authentication.service import AuthService, AuthTokensService
 from crm_epic_events.utils import GenericMessages, print_error, print_info, print_unexpected_error
 
@@ -25,7 +24,7 @@ class Application:
         self.controller = MainController(self.db, self.user)
 
     def run(self):
-        # setup_database()
+        setup_database(self.db)
         try:
             while True:
                 try:
