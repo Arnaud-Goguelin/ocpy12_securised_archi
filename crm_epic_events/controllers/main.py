@@ -6,6 +6,7 @@ from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.controllers.company import CompanyController
 from crm_epic_events.controllers.contract import ContractController
 from crm_epic_events.controllers.customer import CustomerController
+from crm_epic_events.controllers.event import EventController
 from crm_epic_events.controllers.user import UserController
 from crm_epic_events.errors import CustomAuthenticationError
 from crm_epic_events.errors.user_errors import CustomUserError
@@ -47,7 +48,7 @@ class MainController(BaseController):
             MenuItem("3", "Events", self.handle_events_menu),
             MenuItem("4", "Company", self.handle_company_menu),
             MenuItem("5", "Users", self.handle_users_menu),
-            MenuItem("6", "Logout", AuthService.logout),
+            MenuItem("6", "Logout", self.handle_logout),
             MenuItem(StandardInputs.CANCELLED, "Quit", self.exit_app),
         ]
         self.guest_menu_items = [
@@ -103,11 +104,17 @@ class MainController(BaseController):
         controller.handle_contracts_menu()
 
     def handle_events_menu(self):
-        pass
+        controller = EventController(self.db, self.user)
+        controller.handle_events_menu()
 
     def handle_users_menu(self):
         controller = UserController(self.db, self.user)
         controller.handle_users_menu()
+
+    def handle_logout(self):
+        AuthService.logout()
+        self.user = None
+        self.handle_main_menu()
 
     @staticmethod
     def exit_app() -> None:
