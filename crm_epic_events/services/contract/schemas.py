@@ -6,6 +6,7 @@ from pydantic import BaseModel, model_validator
 
 
 class ContractCreateInput(BaseModel):
+    salesperson_id: uuid.UUID
     customer_id: uuid.UUID
     total_amount: Decimal
     remaining_amount: Decimal
