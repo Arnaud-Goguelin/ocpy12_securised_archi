@@ -5,23 +5,33 @@ from crm_epic_events.utils.printers import print_info, print_option, print_title
 
 
 if TYPE_CHECKING:
-    from crm_epic_events.models import Contract, Customer
+    from crm_epic_events.models import Contract, Customer, User
 
 
 class ContractView:
     # --- Prompts ---
 
     @staticmethod
-    def prompt_create(customers: list["Customer"]) -> dict:
+    def prompt_create(customers: list["Customer"], salepersons: list["User"]) -> tuple[str, str, dict]:
         print_title("Create new contract")
+
         for i, customer in enumerate(customers, start=1):
             print_option(str(i), f"{customer.first_name} {customer.last_name}  |  {customer.email}")
         raw_customer = prompt("Select a customer").strip()
-        return raw_customer, {
-            "total_amount": prompt("Total amount").strip(),
-            "remaining_amount": prompt("Remaining amount").strip(),
-            "status": prompt("Already signed? (y/N)").strip().lower() == "y",
-        }
+
+        for i, saleperson in enumerate(salepersons, start=1):
+            print_option(str(i), f"{saleperson.first_name} {saleperson.last_name}  |  {saleperson.email}")
+        raw_saleperson = prompt("Select a salesperson").strip()
+
+        return (
+            raw_customer,
+            raw_saleperson,
+            {
+                "total_amount": prompt("Total amount").strip(),
+                "remaining_amount": prompt("Remaining amount").strip(),
+                "status": prompt("Already signed? (y/N)").strip().lower() == "y",
+            },
+        )
 
     @staticmethod
     def prompt_update(target: "Contract") -> dict:
@@ -48,7 +58,7 @@ class ContractView:
         for i, contract in enumerate(contracts, start=1):
             print_option(
                 str(i),
-                f"ID: {contract.id}  |  Customer: {contract.customer_id}"
+                f"ID: {contract.id}  |  Customer: {contract.customer.first_name} {contract.customer.last_name}"
                 f"  |  Total: {contract.total_amount}  |  Remaining: {contract.remaining_amount}"
                 f"  |  Signed: {'Yes' if contract.status else 'No'}",
             )
@@ -66,7 +76,7 @@ class ContractView:
         for contract in contracts:
             print_info(
                 f"  ID: {contract.id}"
-                f"  |  Customer: {contract.customer.first_name} {contract.customer.last_name} {contract.customer.id}"
+                f"  |  Customer: {contract.customer.first_name} {contract.customer.last_name}"
                 f"  |  Salesperson: {contract.salesperson.first_name} {contract.salesperson.last_name} "
                 f"{contract.salesperson.id}"
                 f"  |  Total: {contract.total_amount:.2f}"
