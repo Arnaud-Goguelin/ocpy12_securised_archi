@@ -1,32 +1,24 @@
-# tests/services/user/test_service.py
-from unittest.mock import patch
-
 import bcrypt
 import pytest
 
 from crm_epic_events.errors import PasswordNotSecuredError, UserAlreadyExistsError
-from crm_epic_events.models import User
 from crm_epic_events.services.user.schemas import UserAssignRoleInput, UserRegisterInput, UserUpdateInput
 from crm_epic_events.services.user.service import UserService
-from crm_epic_events.utils import Roles
-from tests.factories import SECURED_RAW_PASSWORD, UNSECURED_RAW_PASSWORD, UserFactory
+from crm_epic_events.utils.constants import Roles
+from tests.factories import SECURED_RAW_PASSWORD, UNSECURED_RAW_PASSWORD, UserDBFactory, fake
 
 
 # ── get_all ───────────────────────────────────────────────────────────────────
 
 
 class TestGetAll:
-    def test_get_all_returns_users(self, mock_db):
-        users = UserFactory.build_batch(3)
-        with patch.object(User, "get_all", return_value=users):
-            result = UserService.get_all(mock_db)
+    def test_returns_all_users(self, db_session):
+        UserDBFactory.create_batch(3)
+        result = UserService.get_all(db_session)
+        assert len(result) == 3
 
-        assert result == users
-
-    def test_get_all_returns_empty_list(self, mock_db):
-        with patch.object(User, "get_all", return_value=[]):
-            result = UserService.get_all(mock_db)
-
+    def test_returns_empty_list(self, db_session):
+        result = UserService.get_all(db_session)
         assert result == []
 
 
@@ -34,17 +26,16 @@ class TestGetAll:
 
 
 class TestGetAllByRole:
-    def test_get_all_by_role_returns_filtered_users(self, mock_db):
-        managers = UserFactory.build_batch(2, role=Roles.MANAGER)
-        with patch.object(User, "get_all_by_role", return_value=managers):
-            result = UserService.get_all_by_role(Roles.MANAGER, mock_db)
+    def test_returns_only_users_with_given_role(self, db_session):
+        UserDBFactory.create_batch(2, role=Roles.MANAGER)
+        UserDBFactory(role=Roles.SALES)
+        result = UserService.get_all_by_role(Roles.MANAGER, db_session)
+        assert len(result) == 2
+        assert all(u.role == Roles.MANAGER for u in result)
 
-        assert result == managers
-
-    def test_get_all_by_role_returns_empty_list(self, mock_db):
-        with patch.object(User, "get_all_by_role", return_value=[]):
-            result = UserService.get_all_by_role(Roles.SALES, mock_db)
-
+    def test_returns_empty_list_when_no_match(self, db_session):
+        UserDBFactory(role=Roles.SALES)
+        result = UserService.get_all_by_role(Roles.SUPPORT, db_session)
         assert result == []
 
 
@@ -52,61 +43,36 @@ class TestGetAllByRole:
 
 
 class TestRegister:
-    def test_register_success(self, mock_db):
-        data = UserRegisterInput(
-            first_name="John",
-            last_name="Doe",
-            email="john.doe@example.com",
-            password=SECURED_RAW_PASSWORD,
-        )
-        created_user = UserFactory()
+    def test_creates_and_returns_user(self, db_session, register_data):
+        user = UserService.register(register_data, db_session)
+        assert user.first_name == register_data.first_name
+        assert user.last_name == register_data.last_name
+        assert user.email == register_data.email
 
-        with (
-            patch.object(User, "get_by_email", return_value=None),
-            patch.object(User, "create", return_value=created_user),
-        ):
-            result = UserService.register(data, mock_db)
+    def test_user_is_persisted(self, db_session, register_data):
+        user = UserService.register(register_data, db_session)
+        result = UserService.get_all(db_session)
+        assert any(u.id == user.id for u in result)
 
-        assert result == created_user
+    def test_default_role_is_sales(self, db_session, register_data):
+        user = UserService.register(register_data, db_session)
+        assert user.role == Roles.SALES
 
-    def test_register_hashes_password(self, mock_db):
-        data = UserRegisterInput(
-            first_name="Jane",
-            last_name="Doe",
-            email="jane.doe@example.com",
-            password=SECURED_RAW_PASSWORD,
-        )
-        created_user = UserFactory()
+    def test_password_is_hashed(self, db_session, register_data):
+        user = UserService.register(register_data, db_session)
+        assert bcrypt.checkpw(SECURED_RAW_PASSWORD.encode(), user.password.encode())
 
-        with (
-            patch.object(User, "get_by_email", return_value=None),
-            patch.object(User, "create", return_value=created_user) as mock_create,
-        ):
-            UserService.register(data, mock_db)
+    def test_raises_if_email_already_exists(self, db_session, register_data):
+        UserService.register(register_data, db_session)
+        with pytest.raises(UserAlreadyExistsError):
+            UserService.register(register_data, db_session)
 
-        _, _, _, hashed, _ = mock_create.call_args.args
-        assert bcrypt.checkpw(SECURED_RAW_PASSWORD.encode(), hashed.encode())
-
-    def test_register_raises_if_email_already_in_use(self, mock_db, user):
-        data = UserRegisterInput(
-            first_name="John",
-            last_name="Doe",
-            email=user.email,
-            password=SECURED_RAW_PASSWORD,
-        )
-
-        with (
-            patch.object(User, "get_by_email", return_value=user),
-            pytest.raises(UserAlreadyExistsError),
-        ):
-            UserService.register(data, mock_db)
-
-    def test_register_password_unsecured_raises(self):
+    def test_raises_if_password_not_secured(self):
         with pytest.raises(PasswordNotSecuredError):
             UserRegisterInput(
                 first_name="John",
                 last_name="Doe",
-                email="john@example.com",
+                email=fake.email(),
                 password=UNSECURED_RAW_PASSWORD,
             )
 
@@ -115,71 +81,42 @@ class TestRegister:
 
 
 class TestUpdateProfile:
-    def test_manager_can_update_any_user(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        target = UserFactory(role=Roles.SALES)
-        data = UserUpdateInput(first_name="Updated")
-        updated_user = UserFactory(role=Roles.SALES, first_name="Updated")
+    def test_manager_can_update_target_user(self, db_session):
+        manager = UserDBFactory(role=Roles.MANAGER)
+        target = UserDBFactory(role=Roles.SALES, first_name="Old")
+        data = UserUpdateInput(first_name="New")
+        updated = UserService.update_profile(manager, target, data, db_session)
+        assert updated.first_name == "New"
 
-        with patch.object(User, "update", return_value=updated_user):
-            result = UserService.update_profile(manager, target, data, mock_db)
+    def test_non_manager_updates_only_self(self, db_session):
+        sales = UserDBFactory(role=Roles.SALES, first_name="Old")
+        other = UserDBFactory(role=Roles.SALES, first_name="Other")
+        data = UserUpdateInput(first_name="New")
+        UserService.update_profile(sales, other, data, db_session)
 
-        assert result == updated_user
+        assert sales.first_name == "New"
+        assert other.first_name == "Other"
 
-    def test_non_manager_cannot_change_role(self, mock_db):
-        sales_user = UserFactory(role=Roles.SALES)
+    def test_non_manager_cannot_change_role(self, db_session):
+        sales = UserDBFactory(role=Roles.SALES)
         data = UserUpdateInput(role=Roles.MANAGER)
-        updated_user = UserFactory(role=Roles.SALES)
+        updated = UserService.update_profile(sales, sales, data, db_session)
+        assert updated.role == Roles.SALES
 
-        with patch.object(User, "update", return_value=updated_user) as mock_update:
-            UserService.update_profile(sales_user, sales_user, data, mock_db)
-
-        # patch.object on an instance method: self is NOT in args, args[0] is data
-        passed_data: UserUpdateInput = mock_update.call_args.args[0]
-        assert passed_data.role is None
-
-    def test_manager_can_update_target_not_self(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        target = UserFactory(role=Roles.SALES)
-        data = UserUpdateInput(first_name="Updated")
-        updated_user = UserFactory(role=Roles.SALES, first_name="Updated")
-
-        # Patch update on each instance separately to know which one was called
-        from unittest.mock import MagicMock
-
-        manager.update = MagicMock(return_value=updated_user)
-        target.update = MagicMock(return_value=updated_user)
-
-        UserService.update_profile(manager, target, data, mock_db)
-
-        target.update.assert_called_once()
-        manager.update.assert_not_called()
-
-    def test_manager_can_change_role(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        target = UserFactory(role=Roles.SALES)
+    def test_manager_can_change_role(self, db_session):
+        manager = UserDBFactory(role=Roles.MANAGER)
+        target = UserDBFactory(role=Roles.SALES)
         data = UserUpdateInput(role=Roles.SUPPORT)
-        updated_user = UserFactory(role=Roles.SUPPORT)
+        updated = UserService.update_profile(manager, target, data, db_session)
+        assert updated.role == Roles.SUPPORT
 
-        with patch.object(User, "update", return_value=updated_user) as mock_update:
-            UserService.update_profile(manager, target, data, mock_db)
-
-        # patch.object on an instance method: args[0] is data
-        passed_data: UserUpdateInput = mock_update.call_args.args[0]
-        assert passed_data.role == Roles.SUPPORT
-
-    def test_password_is_hashed_on_update(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
+    def test_password_is_hashed_on_update(self, db_session):
+        user = UserDBFactory(role=Roles.SALES)
         data = UserUpdateInput(password=SECURED_RAW_PASSWORD)
+        updated = UserService.update_profile(user, user, data, db_session)
+        assert bcrypt.checkpw(SECURED_RAW_PASSWORD.encode(), updated.password.encode())
 
-        with patch.object(User, "update", return_value=user) as mock_update:
-            UserService.update_profile(user, user, data, mock_db)
-
-        # patch.object on an instance method: args[0] is data
-        passed_data: UserUpdateInput = mock_update.call_args.args[0]
-        assert bcrypt.checkpw(SECURED_RAW_PASSWORD.encode(), passed_data.password.encode())
-
-    def test_update_password_unsecured_raises(self):
+    def test_raises_if_password_not_secured(self):
         with pytest.raises(PasswordNotSecuredError):
             UserUpdateInput(password=UNSECURED_RAW_PASSWORD)
 
@@ -188,49 +125,32 @@ class TestUpdateProfile:
 
 
 class TestAssignRole:
-    def test_assign_role_success(self, mock_db):
-        target = UserFactory(role=Roles.SALES)
+    def test_assigns_role_to_user(self, db_session):
+        target = UserDBFactory(role=Roles.SALES)
         data = UserAssignRoleInput(role=Roles.SUPPORT)
-        updated_user = UserFactory(role=Roles.SUPPORT)
+        updated = UserService.assign_role(target, data, db_session)
+        assert updated.role == Roles.SUPPORT
 
-        with patch.object(User, "update", return_value=updated_user):
-            result = UserService.assign_role(target, data, mock_db)
-
-        assert result == updated_user
-
-    def test_assign_role_calls_update_with_correct_data(self, mock_db):
-        target = UserFactory(role=Roles.SALES)
+    def test_assignment_is_persisted(self, db_session):
+        target = UserDBFactory(role=Roles.SALES)
         data = UserAssignRoleInput(role=Roles.MANAGER)
-
-        # Patch on the instance directly to verify it's called on target
-        from unittest.mock import MagicMock
-
-        target.update = MagicMock(return_value=target)
-
-        UserService.assign_role(target, data, mock_db)
-
-        target.update.assert_called_once_with(data, mock_db)
+        UserService.assign_role(target, data, db_session)
+        result = UserService.get_all_by_role(Roles.MANAGER, db_session)
+        assert any(u.id == target.id for u in result)
 
 
 # ── delete ────────────────────────────────────────────────────────────────────
 
 
 class TestDelete:
-    def test_delete_calls_delete_on_target(self, mock_db):
-        target = UserFactory()
+    def test_deletes_user(self, db_session):
+        target = UserDBFactory()
+        target_id = target.id
+        UserService.delete(target, db_session)
+        result = UserService.get_all(db_session)
+        assert not any(u.id == target_id for u in result)
 
-        from unittest.mock import MagicMock
-
-        target.delete = MagicMock(return_value=None)
-
-        UserService.delete(target, mock_db)
-
-        target.delete.assert_called_once_with(mock_db)
-
-    def test_delete_returns_none(self, mock_db):
-        target = UserFactory()
-
-        with patch.object(User, "delete", return_value=None):
-            result = UserService.delete(target, mock_db)
-
+    def test_delete_returns_none(self, db_session):
+        target = UserDBFactory()
+        result = UserService.delete(target, db_session)
         assert result is None
