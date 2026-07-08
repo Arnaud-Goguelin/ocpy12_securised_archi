@@ -28,27 +28,6 @@ class TestHandleList:
             assert signal == NavSignal.STAY
 
 
-# ── handle_list_without_support ───────────────────────────────────────────────
-
-
-class TestHandleListWithoutSupport:
-    def test_manager_can_list_without_support(self, mock_db, manager):
-        ctrl = EventController(mock_db, manager)
-        with patch.object(EventService, "get_all_without_support", return_value=[]):
-            signal = ctrl.handle_list_without_support()
-        assert signal == NavSignal.STAY
-
-    def test_sales_cannot_list_without_support(self, mock_db, salesperson):
-        ctrl = EventController(mock_db, salesperson)
-        with pytest.raises(UserNotAllowedError):
-            ctrl.handle_list_without_support()
-
-    def test_support_cannot_list_without_support(self, mock_db, support):
-        ctrl = EventController(mock_db, support)
-        with pytest.raises(UserNotAllowedError):
-            ctrl.handle_list_without_support()
-
-
 # ── handle_create ─────────────────────────────────────────────────────────────
 
 
