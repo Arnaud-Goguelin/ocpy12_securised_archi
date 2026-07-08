@@ -3,10 +3,9 @@ import uuid
 import pytest
 
 from crm_epic_events.errors import ContractNotFoundError, ContractNotSignedError
-from crm_epic_events.services.event.schemas import EventCreateInput, EventUpdateInput
+from crm_epic_events.services.event.schemas import EventUpdateInput
 from crm_epic_events.services.event.service import EventService
-from crm_epic_events.utils.constants import Roles
-from tests.factories import EventDBFactory, UserDBFactory, fake
+from tests.factories import EventDBFactory
 
 
 # ── get_all ───────────────────────────────────────────────────────────────────
@@ -30,17 +29,15 @@ class TestGetAll:
 
 
 class TestGetAllWithoutSupport:
-    def test_returns_only_events_without_support(self, db_session):
-        support = UserDBFactory(role=Roles.SUPPORT)
+    def test_returns_only_events_without_support(self, db_session, support, event):
         EventDBFactory(support_id=None)
-        EventDBFactory(support_id=support.id)
+        event.support_id = support.id
         result = EventService.get_all_without_support(db_session)
         assert len(result) == 1
         assert result[0].support_id is None
 
-    def test_returns_empty_when_all_have_support(self, db_session):
-        support = UserDBFactory(role=Roles.SUPPORT)
-        EventDBFactory(support_id=support.id)
+    def test_returns_empty_when_all_have_support(self, db_session, support, event):
+        event.support_id = support.id
         result = EventService.get_all_without_support(db_session)
         assert result == []
 
@@ -49,16 +46,14 @@ class TestGetAllWithoutSupport:
 
 
 class TestGetAllBySupport:
-    def test_returns_events_for_support_user(self, db_session):
-        support = UserDBFactory(role=Roles.SUPPORT)
-        EventDBFactory(support_id=support.id)
-        EventDBFactory(support_id=None)  # autre event sans support
+    def test_returns_events_for_support_user(self, db_session, support, event):
+        event.support_id = support.id
+        EventDBFactory(support_id=None)
         result = EventService.get_all_by_support(support, db_session)
         assert len(result) == 1
         assert result[0].support_id == support.id
 
-    def test_returns_empty_list_when_no_events(self, db_session):
-        support = UserDBFactory(role=Roles.SUPPORT)
+    def test_returns_empty_list_when_no_events(self, db_session, support):
         result = EventService.get_all_by_support(support, db_session)
         assert result == []
 
@@ -67,8 +62,7 @@ class TestGetAllBySupport:
 
 
 class TestGetById:
-    def test_returns_event_when_found(self, db_session):
-        event = EventDBFactory()
+    def test_returns_event_when_found(self, db_session, event):
         result = EventService.get_by_id(event.id, db_session)
         assert result is not None
         assert result.id == event.id
@@ -98,21 +92,13 @@ class TestCreate:
         with pytest.raises(ContractNotFoundError):
             EventService.create(event_create_data, db_session)
 
-    def test_raises_if_contract_not_signed(self, db_session, unsigned_contract):
-        data = EventCreateInput(
-            contract_id=unsigned_contract.id,
-            customer_id=unsigned_contract.customer_id,
-            support_id=None,
-            start_date=fake.date_time_this_year(tzinfo=__import__("datetime").timezone.utc),
-            end_date=fake.future_datetime(tzinfo=__import__("datetime").timezone.utc),
-            location=fake.city(),
-            attendees=fake.pyint(min_value=1, max_value=500),
-            notes=None,
-        )
+    def test_raises_if_contract_not_signed(self, db_session, event_create_data, unsigned_contract):
+        event_create_data.contract_id = unsigned_contract.id
         with pytest.raises(ContractNotSignedError):
-            EventService.create(data, db_session)
+            EventService.create(event_create_data, db_session)
 
     def test_support_id_is_optional(self, db_session, event_create_data):
+        event_create_data.support_id = None
         event = EventService.create(event_create_data, db_session)
         assert event.support_id is None
 
@@ -125,27 +111,27 @@ class TestCreate:
 
 
 class TestUpdate:
-    def test_updates_location(self, db_session):
-        event = EventDBFactory(location="Paris")
-        data = EventUpdateInput(location="Lyon")
+    def test_updates_location(self, db_session, event):
+        event.location = "Here"
+        data = EventUpdateInput(location="Somewhere")
         updated = EventService.update(event, data, db_session)
-        assert updated.location == "Lyon"
+        assert updated.location == "Somewhere"
 
-    def test_updates_attendees(self, db_session):
-        event = EventDBFactory(attendees=50)
+    def test_updates_attendees(self, db_session, event):
+        event.attendees = 50
         data = EventUpdateInput(attendees=200)
         updated = EventService.update(event, data, db_session)
         assert updated.attendees == 200
 
-    def test_partial_update_does_not_affect_other_fields(self, db_session):
-        event = EventDBFactory(location="Paris", attendees=50)
-        data = EventUpdateInput(location="Lyon")
+    def test_partial_update_does_not_affect_other_fields(self, db_session, event):
+        event.location = "Here"
+        event.attendees = 50
+        data = EventUpdateInput(location="Somewhere")
         updated = EventService.update(event, data, db_session)
         assert updated.attendees == 50
 
-    def test_assign_support_on_update(self, db_session):
-        support = UserDBFactory(role=Roles.SUPPORT)
-        event = EventDBFactory(support_id=None)
+    def test_assign_support_on_update(self, db_session, support, event):
+        event.support_id = None
         data = EventUpdateInput(support_id=support.id)
         updated = EventService.update(event, data, db_session)
         assert updated.support_id == support.id
@@ -155,13 +141,11 @@ class TestUpdate:
 
 
 class TestDelete:
-    def test_deletes_event(self, db_session):
-        event = EventDBFactory()
+    def test_deletes_event(self, db_session, event):
         event_id = event.id
         EventService.delete(event, db_session)
         assert EventService.get_by_id(event_id, db_session) is None
 
-    def test_delete_returns_none(self, db_session):
-        event = EventDBFactory()
+    def test_delete_returns_none(self, db_session, event):
         result = EventService.delete(event, db_session)
         assert result is None

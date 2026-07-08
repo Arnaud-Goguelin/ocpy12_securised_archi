@@ -28,7 +28,6 @@ class TestGetAll:
 class TestGetAllByRole:
     def test_returns_only_users_with_given_role(self, db_session):
         UserDBFactory.create_batch(2, role=Roles.MANAGER)
-        UserDBFactory(role=Roles.SALES)
         result = UserService.get_all_by_role(Roles.MANAGER, db_session)
         assert len(result) == 2
         assert all(u.role == Roles.MANAGER for u in result)
@@ -81,21 +80,18 @@ class TestRegister:
 
 
 class TestUpdateProfile:
-    def test_manager_can_update_target_user(self, db_session):
-        manager = UserDBFactory(role=Roles.MANAGER)
-        target = UserDBFactory(role=Roles.SALES, first_name="Old")
-        data = UserUpdateInput(first_name="New")
-        updated = UserService.update_profile(manager, target, data, db_session)
-        assert updated.first_name == "New"
+    def test_manager_can_update_target_user(self, db_session, manager, salesperson):
+        data = UserUpdateInput(first_name="New first name")
+        updated = UserService.update_profile(manager, salesperson, data, db_session)
+        assert updated.first_name == "New first name"
 
-    def test_non_manager_updates_only_self(self, db_session):
-        sales = UserDBFactory(role=Roles.SALES, first_name="Old")
-        other = UserDBFactory(role=Roles.SALES, first_name="Other")
-        data = UserUpdateInput(first_name="New")
-        UserService.update_profile(sales, other, data, db_session)
+    def test_non_manager_updates_only_self(self, db_session, salesperson, support):
+        data = UserUpdateInput(first_name="New first name")
+        updated = UserService.update_profile(salesperson, salesperson, data, db_session)
+        assert updated.first_name == "New first name"
 
-        assert sales.first_name == "New"
-        assert other.first_name == "Other"
+        assert salesperson.first_name == "New first name"
+        assert support.first_name == support.first_name
 
     def test_non_manager_cannot_change_role(self, db_session):
         sales = UserDBFactory(role=Roles.SALES)
@@ -131,26 +127,22 @@ class TestAssignRole:
         updated = UserService.assign_role(target, data, db_session)
         assert updated.role == Roles.SUPPORT
 
-    def test_assignment_is_persisted(self, db_session):
-        target = UserDBFactory(role=Roles.SALES)
+    def test_assignment_is_persisted(self, db_session, salesperson):
         data = UserAssignRoleInput(role=Roles.MANAGER)
-        UserService.assign_role(target, data, db_session)
+        UserService.assign_role(salesperson, data, db_session)
         result = UserService.get_all_by_role(Roles.MANAGER, db_session)
-        assert any(u.id == target.id for u in result)
+        assert any(u.id == salesperson.id for u in result)
 
 
 # ── delete ────────────────────────────────────────────────────────────────────
 
 
 class TestDelete:
-    def test_deletes_user(self, db_session):
-        target = UserDBFactory()
-        target_id = target.id
-        UserService.delete(target, db_session)
+    def test_deletes_user(self, db_session, salesperson):
+        UserService.delete(salesperson, db_session)
         result = UserService.get_all(db_session)
-        assert not any(u.id == target_id for u in result)
+        assert not any(u.id == salesperson.id for u in result)
 
-    def test_delete_returns_none(self, db_session):
-        target = UserDBFactory()
-        result = UserService.delete(target, db_session)
+    def test_delete_returns_none(self, db_session, salesperson):
+        result = UserService.delete(salesperson, db_session)
         assert result is None
