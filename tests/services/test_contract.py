@@ -2,10 +2,9 @@ import uuid
 
 from decimal import Decimal
 
-from crm_epic_events.services.contract.schemas import ContractCreateInput, ContractUpdateInput
+from crm_epic_events.services.contract.schemas import ContractUpdateInput
 from crm_epic_events.services.contract.service import ContractService
-from crm_epic_events.utils.constants import Roles
-from tests.factories import ContractDBFactory, CustomerDBFactory, UserDBFactory
+from tests.factories import ContractDBFactory
 
 
 # ── get_all ───────────────────────────────────────────────────────────────────
@@ -26,11 +25,10 @@ class TestGetAll:
 
 
 class TestGetById:
-    def test_returns_contract_when_found(self, db_session):
-        contract = ContractDBFactory()
-        result = ContractService.get_by_id(contract.id, db_session)
+    def test_returns_contract_when_found(self, db_session, signed_contract):
+        result = ContractService.get_by_id(signed_contract.id, db_session)
         assert result is not None
-        assert result.id == contract.id
+        assert result.id == signed_contract.id
 
     def test_returns_none_when_not_found(self, db_session):
         result = ContractService.get_by_id(uuid.uuid4(), db_session)
@@ -41,16 +39,13 @@ class TestGetById:
 
 
 class TestGetAllBySalesperson:
-    def test_returns_contracts_for_salesperson(self, db_session):
-        contract = ContractDBFactory()
-        ContractDBFactory()
-        salesperson = contract.salesperson
+    def test_returns_contracts_for_salesperson(self, db_session, signed_contract):
+        salesperson = signed_contract.salesperson
         result = ContractService.get_all_by_salesperson(salesperson, db_session)
         assert len(result) == 1
-        assert result[0].id == contract.id
+        assert result[0].id == signed_contract.id
 
-    def test_returns_empty_list_when_no_contracts(self, db_session):
-        salesperson = UserDBFactory(role=Roles.SALES)
+    def test_returns_empty_list_when_no_contracts(self, db_session, salesperson):
         result = ContractService.get_all_by_salesperson(salesperson, db_session)
         assert result == []
 
@@ -59,15 +54,12 @@ class TestGetAllBySalesperson:
 
 
 class TestGetUnsigned:
-    def test_returns_only_unsigned_contracts(self, db_session):
-        ContractDBFactory(status=False)
-        ContractDBFactory(status=True)
+    def test_returns_only_unsigned_contracts(self, db_session, unsigned_contract, signed_contract):
         result = ContractService.get_unsigned(db_session)
         assert len(result) == 1
-        assert result[0].status is False
+        assert result[0].id == unsigned_contract.id
 
-    def test_returns_empty_when_all_signed(self, db_session):
-        ContractDBFactory(status=True)
+    def test_returns_empty_when_all_signed(self, db_session, signed_contract):
         result = ContractService.get_unsigned(db_session)
         assert result == []
 
@@ -93,39 +85,18 @@ class TestGetUnpaid:
 
 
 class TestCreate:
-    def test_creates_and_returns_contract(self, db_session):
-        customer = CustomerDBFactory()
-        data = ContractCreateInput(
-            customer_id=str(customer.id),
-            total_amount=Decimal("1000.00"),
-            remaining_amount=Decimal("500.00"),
-            status=False,
-        )
-        contract = ContractService.create(customer, data, db_session)
+    def test_creates_and_returns_contract(self, db_session, salesperson, customer, contract_create_data):
+        contract = ContractService.create(customer, contract_create_data, db_session)
         assert contract.id is not None
         assert contract.total_amount == Decimal("1000.00")
         assert contract.remaining_amount == Decimal("500.00")
 
-    def test_inherits_salesperson_from_customer(self, db_session):
-        customer = CustomerDBFactory()
-        data = ContractCreateInput(
-            customer_id=str(customer.id),
-            total_amount=Decimal("1000.00"),
-            remaining_amount=Decimal("500.00"),
-            status=False,
-        )
-        contract = ContractService.create(customer, data, db_session)
+    def test_inherits_salesperson_from_customer(self, db_session, customer, contract_create_data):
+        contract = ContractService.create(customer, contract_create_data, db_session)
         assert contract.salesperson_id == customer.salesperson_id
 
-    def test_contract_is_persisted(self, db_session):
-        customer = CustomerDBFactory()
-        data = ContractCreateInput(
-            customer_id=str(customer.id),
-            total_amount=Decimal("1000.00"),
-            remaining_amount=Decimal("500.00"),
-            status=False,
-        )
-        contract = ContractService.create(customer, data, db_session)
+    def test_contract_is_persisted(self, db_session, customer, contract_create_data):
+        contract = ContractService.create(customer, contract_create_data, db_session)
         assert ContractService.get_by_id(contract.id, db_session) is not None
 
 

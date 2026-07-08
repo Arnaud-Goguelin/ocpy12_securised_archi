@@ -27,16 +27,14 @@ class TestHandleList:
 
 
 class TestHandleListUnsigned:
-    def test_manager_can_list_unsigned(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_manager_can_list_unsigned(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         with patch.object(ContractService, "get_unsigned", return_value=[]):
             signal = ctrl.handle_list_unsigned()
         assert signal == NavSignal.STAY
 
-    def test_sales_can_list_unsigned(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = ContractController(mock_db, user)
+    def test_sales_can_list_unsigned(self, mock_db, salesperson):
+        ctrl = ContractController(mock_db, salesperson)
         with patch.object(ContractService, "get_unsigned", return_value=[]):
             signal = ctrl.handle_list_unsigned()
         assert signal == NavSignal.STAY
@@ -46,13 +44,15 @@ class TestHandleListUnsigned:
 
 
 class TestHandleCreate:
-    def test_manager_can_create(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_manager_can_create(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         customers = CustomerFactory.build_batch(2)
         contract = ContractFactory()
         ctrl.view.prompt_create = MagicMock(
+            # remember handle_create in contract controller expects:
+            # raw_customer, raw_salesperson, raw_data as result of self.view.prompt_create
             return_value=(
+                "1",
                 "1",
                 {
                     "total_amount": "1000",
@@ -70,32 +70,30 @@ class TestHandleCreate:
 
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_create(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = ContractController(mock_db, user)
+    def test_sales_cannot_create(self, mock_db, salesperson):
+        ctrl = ContractController(mock_db, salesperson)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_create()
 
-    def test_support_cannot_create(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = ContractController(mock_db, user)
+    def test_support_cannot_create(self, mock_db, support):
+        ctrl = ContractController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_create()
 
-    def test_no_customers_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_no_customers_returns_stay(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
 
         with patch.object(CustomerService, "get_all", return_value=[]):
             signal = ctrl.handle_create()
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_customer_selection_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_invalid_customer_selection_returns_stay(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         customers = CustomerFactory.build_batch(2)
-        ctrl.view.prompt_create = MagicMock(return_value=("invalid", {}))
+        # remember handle_create in contract controller expects:
+        # raw_customer, raw_salesperson, raw_data as result of self.view.prompt_create
+        ctrl.view.prompt_create = MagicMock(return_value=("invalid", "1", {}))
 
         with patch.object(CustomerService, "get_all", return_value=customers):
             signal = ctrl.handle_create()
@@ -107,9 +105,8 @@ class TestHandleCreate:
 
 
 class TestHandleUpdate:
-    def test_manager_can_update_any_contract(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_manager_can_update_any_contract(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         contracts = ContractFactory.build_batch(2)
         ctrl.view.prompt_select_contract = MagicMock(return_value="1")
         ctrl.view.prompt_update = MagicMock(return_value={"status": True})
@@ -122,11 +119,10 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_sales_can_update_own_contract(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        contract = ContractFactory(salesperson_id=user.id)
-        contract.salesperson = user
-        ctrl = ContractController(mock_db, user)
+    def test_sales_can_update_own_contract(self, mock_db, salesperson, contract):
+        # set salesperson in ficture as contract owner
+        contract.salesperson_id = salesperson.id
+        ctrl = ContractController(mock_db, salesperson)
         ctrl.view.prompt_select_contract = MagicMock(return_value="1")
         ctrl.view.prompt_update = MagicMock(return_value={"status": True})
 
@@ -138,12 +134,11 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_update_other_salesperson_contract(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        other_user = UserFactory(role=Roles.SALES)
-        contract = ContractFactory(salesperson_id=other_user.id)
-        contract.salesperson = other_user
-        ctrl = ContractController(mock_db, user)
+    def test_sales_cannot_update_other_salesperson_contract(self, mock_db, salesperson):
+        other_salesperson = UserFactory(role=Roles.SALES)
+        contract = ContractFactory(salesperson_id=other_salesperson.id)
+        contract.salesperson = other_salesperson
+        ctrl = ContractController(mock_db, salesperson)
         ctrl.view.prompt_select_contract = MagicMock(return_value="1")
 
         with (
@@ -152,15 +147,13 @@ class TestHandleUpdate:
         ):
             ctrl.handle_update()
 
-    def test_support_cannot_update(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = ContractController(mock_db, user)
+    def test_support_cannot_update(self, mock_db, support):
+        ctrl = ContractController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_update()
 
-    def test_cancelled_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_cancelled_returns_stay(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         ctrl.view.prompt_select_contract = MagicMock(return_value=StandardInputs.CANCELLED)
 
         with patch.object(ContractService, "get_all", return_value=[]):
@@ -168,9 +161,8 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         contracts = ContractFactory.build_batch(2)
         ctrl.view.prompt_select_contract = MagicMock(return_value="invalid")
 
@@ -179,9 +171,8 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_nothing_to_update_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_nothing_to_update_returns_stay(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         contracts = ContractFactory.build_batch(2)
         ctrl.view.prompt_select_contract = MagicMock(return_value="1")
         ctrl.view.prompt_update = MagicMock(return_value={})
@@ -196,9 +187,8 @@ class TestHandleUpdate:
 
 
 class TestHandleDelete:
-    def test_manager_can_delete(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_manager_can_delete(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         contracts = ContractFactory.build_batch(2)
         ctrl.view.prompt_select_contract = MagicMock(return_value="1")
 
@@ -211,21 +201,18 @@ class TestHandleDelete:
         mock_delete.assert_called_once_with(contracts[0], mock_db)
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = ContractController(mock_db, user)
+    def test_sales_cannot_delete(self, mock_db, salesperson):
+        ctrl = ContractController(mock_db, salesperson)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_support_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = ContractController(mock_db, user)
+    def test_support_cannot_delete(self, mock_db, support):
+        ctrl = ContractController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_cancelled_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_cancelled_returns_stay(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         ctrl.view.prompt_select_contract = MagicMock(return_value=StandardInputs.CANCELLED)
 
         with patch.object(ContractService, "get_all", return_value=[]):
@@ -233,9 +220,8 @@ class TestHandleDelete:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = ContractController(mock_db, user)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
+        ctrl = ContractController(mock_db, manager)
         contracts = ContractFactory.build_batch(2)
         ctrl.view.prompt_select_contract = MagicMock(return_value="invalid")
 
