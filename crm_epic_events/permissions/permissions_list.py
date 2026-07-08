@@ -1,6 +1,11 @@
-from enum import Enum
+from enum import Enum, StrEnum
 
-from crm_epic_events.utils import Roles
+
+class Roles(StrEnum):
+    # in a more commune way, MANAGER = ADMIN, this role is called MANAGER to match with specifications
+    MANAGER = "manager"
+    SUPPORT = "support"
+    SALES = "sales"
 
 
 class Permissions(list[Roles], Enum):

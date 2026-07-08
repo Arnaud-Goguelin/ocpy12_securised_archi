@@ -2,12 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, StrEnum, auto
 
-
-class Roles(StrEnum):
-    # in a more commune way, MANAGER = ADMIN, this role is called MANAGER to match with specifications
-    MANAGER = "manager"
-    SUPPORT = "support"
-    SALES = "sales"
+from crm_epic_events.permissions import Roles
 
 
 class GenericMessages(StrEnum):
@@ -41,4 +36,4 @@ class MenuItem:
     label: str
     action: Callable
     # default: all Roles are allowed
-    roles_allowed: list[Roles] = field(default_factory=lambda: [*Roles])
+    roles_allowed: list["Roles"] = field(default_factory=lambda: [*Roles])
