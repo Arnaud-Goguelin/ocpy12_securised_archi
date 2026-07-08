@@ -3,7 +3,7 @@ import uuid
 from pydantic import BaseModel, EmailStr, field_validator
 
 from crm_epic_events.errors import PasswordNotSecuredError
-from crm_epic_events.utils.constants import Roles
+from crm_epic_events.permissions import Roles
 
 
 SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;':\",./<>?"

@@ -4,11 +4,11 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import UserIsNotOwnerError
-from crm_epic_events.permissions import Permissions, require_roles
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import ContractService, CustomerService, UserService
 from crm_epic_events.services.contract.schemas import ContractCreateInput, ContractUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import ContractView, MainMenuView
 
@@ -30,11 +30,11 @@ class ContractController(BaseController):
                 "List my contracts" if self.user.role == Roles.SALES else "List all contracts",
                 self.handle_list,
             ),
-            MenuItem("2", "List unsigned contracts", self.handle_list_unsigned, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("3", "List unpaid contracts", self.handle_list_unpaid, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("4", "Create a contract", self.handle_create, [Roles.MANAGER]),
-            MenuItem("5", "Update a contract", self.handle_update, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("6", "Delete a contract", self.handle_delete, [Roles.MANAGER]),
+            MenuItem("2", "List unsigned contracts", self.handle_list_unsigned),
+            MenuItem("3", "List unpaid contracts", self.handle_list_unpaid),
+            MenuItem("4", "Create a contract", self.handle_create, [*Permissions.CONTRACT_CREATE]),
+            MenuItem("5", "Update a contract", self.handle_update, [*Permissions.CONTRACT_UPDATE]),
+            MenuItem("6", "Delete a contract", self.handle_delete, [*Permissions.CONTRACT_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 

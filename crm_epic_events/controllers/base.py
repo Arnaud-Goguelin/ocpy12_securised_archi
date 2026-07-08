@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 from crm_epic_events.errors import UserIsNotOwnerError
-from crm_epic_events.utils.constants import MenuItem, Roles
+from crm_epic_events.permissions import Roles
+from crm_epic_events.utils.constants import MenuItem
 
 
 if TYPE_CHECKING:

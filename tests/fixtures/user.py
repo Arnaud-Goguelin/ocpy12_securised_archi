@@ -1,7 +1,7 @@
 import pytest
 
+from crm_epic_events.permissions import Roles
 from crm_epic_events.services import UserRegisterInput
-from crm_epic_events.utils import Roles
 from tests.factories import (
     SECURED_RAW_PASSWORD,
     UserDBFactory,

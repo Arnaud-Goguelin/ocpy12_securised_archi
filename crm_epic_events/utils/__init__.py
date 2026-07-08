@@ -1,4 +1,4 @@
-from .constants import Roles, GenericMessages, StandardInputs, NavSignal, MenuItem
+from .constants import GenericMessages, StandardInputs, NavSignal, MenuItem
 from .printers import (
     print_title,
     print_info,

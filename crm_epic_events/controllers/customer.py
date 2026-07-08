@@ -4,11 +4,11 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import UserIsNotOwnerError, UserNotAllowedError
-from crm_epic_events.permissions import Permissions, require_roles
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import CustomerService
 from crm_epic_events.services.customer.schemas import CustomerCreateInput, CustomerUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import CustomerView, MainMenuView
 
@@ -30,9 +30,9 @@ class CustomerController(BaseController):
                 "List all customers" if self.user.role == Roles.MANAGER else "List my customers",
                 self.handle_list,
             ),
-            MenuItem("2", "Create a customer", self.handle_create, [Roles.SALES]),
-            MenuItem("3", "Update a customer", self.handle_update, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("4", "Delete a customer", self.handle_delete, [Roles.MANAGER]),
+            MenuItem("2", "Create a customer", self.handle_create, [*Permissions.CUSTOMER_CREATE]),
+            MenuItem("3", "Update a customer", self.handle_update, [*Permissions.CUSTOMER_UPDATE]),
+            MenuItem("4", "Delete a customer", self.handle_delete, [*Permissions.CUSTOMER_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 

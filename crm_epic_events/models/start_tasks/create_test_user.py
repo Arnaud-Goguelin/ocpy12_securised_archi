@@ -6,7 +6,8 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
 from crm_epic_events.models.user import User
-from crm_epic_events.utils import Roles, print_info
+from crm_epic_events.permissions import Roles
+from crm_epic_events.utils import print_info
 
 
 def create_test_user(db: "Session"):

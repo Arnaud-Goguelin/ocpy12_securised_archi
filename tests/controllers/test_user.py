@@ -4,8 +4,9 @@ import pytest
 
 from crm_epic_events.controllers.user import UserController
 from crm_epic_events.errors import UserNotAllowedError
+from crm_epic_events.permissions import Roles
 from crm_epic_events.services.user.service import UserService
-from crm_epic_events.utils.constants import NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import NavSignal, StandardInputs
 from tests.factories import UserFactory
 
 

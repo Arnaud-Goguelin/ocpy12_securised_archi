@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
-from crm_epic_events.permissions import Permissions, require_roles
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import UserAssignRoleInput, UserService, UserUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import UserView
 
@@ -25,9 +25,9 @@ class UserController(BaseController):
         self.menu_items = [
             MenuItem("1", "List users", self.handle_list),
             MenuItem("2", "Update my profile", self.handle_update_profile_self),
-            MenuItem("3", "Update a user", self.handle_update_profile_other, [Roles.MANAGER]),
-            MenuItem("4", "Assign role", self.handle_assign_role, [Roles.MANAGER]),
-            MenuItem("5", "Delete a user", self.handle_delete, [Roles.MANAGER]),
+            MenuItem("3", "Update a user", self.handle_update_profile_other, [*Permissions.USER_UPDATE]),
+            MenuItem("4", "Assign role", self.handle_assign_role, [*Permissions.USER_ASSIGN_ROLE]),
+            MenuItem("5", "Delete a user", self.handle_delete, [*Permissions.USER_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 

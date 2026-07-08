@@ -8,7 +8,8 @@ from sqlalchemy.exc import NoResultFound
 
 from crm_epic_events.errors import UserAlreadyExistsError
 from crm_epic_events.models import User
-from crm_epic_events.utils import Roles, db_transaction
+from crm_epic_events.permissions import Roles
+from crm_epic_events.utils import db_transaction
 
 
 if TYPE_CHECKING:

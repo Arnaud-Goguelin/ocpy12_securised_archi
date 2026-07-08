@@ -4,11 +4,11 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import CompanyAlreadyExistsError, UserNotAllowedError
-from crm_epic_events.permissions import Permissions, require_roles
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import CompanyService
 from crm_epic_events.services.company.schemas import CompanyCreateInput, CompanyUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import CompanyView
 
@@ -26,9 +26,9 @@ class CompanyController(BaseController):
         self.view = CompanyView()
         self.menu_items = [
             MenuItem("1", "List all companies", self.handle_list),
-            MenuItem("2", "Create a company", self.handle_create, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("3", "Update a company", self.handle_update, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("4", "Delete a company", self.handle_delete, [Roles.MANAGER]),
+            MenuItem("2", "Create a company", self.handle_create, [*Permissions.COMPANY_CREATE]),
+            MenuItem("3", "Update a company", self.handle_update, [*Permissions.COMPANY_UPDATE]),
+            MenuItem("4", "Delete a company", self.handle_delete, [*Permissions.COMPANY_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 

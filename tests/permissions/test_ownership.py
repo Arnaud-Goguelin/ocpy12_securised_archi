@@ -1,7 +1,7 @@
 import pytest
 
 from crm_epic_events.errors import UserIsNotOwnerError
-from crm_epic_events.utils.constants import Roles
+from crm_epic_events.permissions import Roles
 from tests.factories import UserFactory
 
 from .fake_controller import FakeController

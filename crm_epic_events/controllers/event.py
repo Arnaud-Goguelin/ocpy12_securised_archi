@@ -8,11 +8,11 @@ from crm_epic_events.errors import (
     ContractNotSignedError,
     UserIsNotOwnerError,
 )
-from crm_epic_events.permissions import Permissions, require_roles
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import ContractService, EventService
 from crm_epic_events.services.event.schemas import EventCreateInput, EventUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import EventView, MainMenuView
 

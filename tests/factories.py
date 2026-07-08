@@ -8,7 +8,7 @@ import factory
 from faker import Faker
 
 from crm_epic_events.models import Company, Contract, Customer, Event, User
-from crm_epic_events.utils import Roles
+from crm_epic_events.permissions import Roles
 
 
 fake = Faker()

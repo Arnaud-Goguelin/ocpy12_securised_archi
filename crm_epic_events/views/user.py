@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
-from crm_epic_events.utils.constants import Roles, StandardInputs
+from crm_epic_events.permissions import Roles
+from crm_epic_events.utils.constants import StandardInputs
 from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt, prompt_secret
 
 

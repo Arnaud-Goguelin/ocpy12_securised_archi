@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, field_serializer
 
-from crm_epic_events.utils import Roles
+from crm_epic_events.permissions import Roles
 
 
 class TokenBase(BaseModel):

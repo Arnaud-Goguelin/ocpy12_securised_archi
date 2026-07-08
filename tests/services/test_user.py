@@ -2,9 +2,9 @@ import bcrypt
 import pytest
 
 from crm_epic_events.errors import PasswordNotSecuredError, UserAlreadyExistsError
+from crm_epic_events.permissions import Roles
 from crm_epic_events.services.user.schemas import UserAssignRoleInput, UserRegisterInput, UserUpdateInput
 from crm_epic_events.services.user.service import UserService
-from crm_epic_events.utils.constants import Roles
 from tests.factories import SECURED_RAW_PASSWORD, UNSECURED_RAW_PASSWORD, UserDBFactory, fake
 
 

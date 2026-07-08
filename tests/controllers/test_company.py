@@ -4,8 +4,9 @@ import pytest
 
 from crm_epic_events.controllers.company import CompanyController
 from crm_epic_events.errors import CompanyAlreadyExistsError, UserNotAllowedError
+from crm_epic_events.permissions import Roles
 from crm_epic_events.services.company.service import CompanyService
-from crm_epic_events.utils.constants import NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import NavSignal, StandardInputs
 from tests.factories import CompanyFactory, UserFactory
 
 

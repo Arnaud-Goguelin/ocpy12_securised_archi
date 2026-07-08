@@ -9,9 +9,10 @@ from crm_epic_events.errors import (
     UserIsNotOwnerError,
     UserNotAllowedError,
 )
+from crm_epic_events.permissions import Roles
 from crm_epic_events.services.contract.service import ContractService
 from crm_epic_events.services.event.service import EventService
-from crm_epic_events.utils.constants import NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import NavSignal, StandardInputs
 from tests.factories import EventFactory, UserDBFactory, UserFactory
 
 
