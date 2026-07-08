@@ -8,7 +8,7 @@ from crm_epic_events.errors import (
     ContractNotSignedError,
     UserIsNotOwnerError,
 )
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.permissions import Permissions, require_roles
 from crm_epic_events.services import ContractService, EventService
 from crm_epic_events.services.event.schemas import EventCreateInput, EventUpdateInput
 from crm_epic_events.utils import check_choice
@@ -29,11 +29,11 @@ class EventController(BaseController):
         self.user = user
         self.view = EventView()
         self.menu_items = [
-            MenuItem("1", "List my events" if self.user.role == Roles.SUPPORT else "List all events", self.handle_list),
-            MenuItem("2", "List events without support", self.handle_list_without_support, [Roles.MANAGER]),
-            MenuItem("3", "Create an event", self.handle_create, [Roles.SALES]),
-            MenuItem("4", "Update an event", self.handle_update, [Roles.MANAGER, Roles.SUPPORT]),
-            MenuItem("5", "Delete an event", self.handle_delete, [Roles.MANAGER]),
+            MenuItem("1", "List all events", self.handle_list),
+            MenuItem("2", "List events without support", self.handle_list_without_support),
+            MenuItem("3", "Create an event", self.handle_create, [*Permissions.EVENT_CREATE]),
+            MenuItem("4", "Update an event", self.handle_update, [*Permissions.EVENT_UPDATE]),
+            MenuItem("5", "Delete an event", self.handle_delete, [*Permissions.EVENT_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 
@@ -54,13 +54,12 @@ class EventController(BaseController):
         self.view.display_events(events, title="All events")
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
     def handle_list_without_support(self) -> NavSignal:
         events = EventService.get_all_without_support(self.db)
         self.view.display_events(events, title="Events without support")
         return NavSignal.STAY
 
-    @require_roles(Roles.SALES)
+    @require_roles(*Permissions.EVENT_CREATE)
     def handle_create(self) -> NavSignal:
         # Only signed contracts owned by the current salesperson
         all_contracts = ContractService.get_all_by_salesperson(self.user, self.db)
@@ -90,7 +89,7 @@ class EventController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SUPPORT)
+    @require_roles(*Permissions.EVENT_UPDATE)
     def handle_update(self) -> NavSignal:
         # Filter events by support user if not manager, to enforce ownership
         events = (
@@ -124,7 +123,7 @@ class EventController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.EVENT_DELETE)
     def handle_delete(self) -> NavSignal:
         events = EventService.get_all(self.db)
         raw = self.view.prompt_select_event(events)

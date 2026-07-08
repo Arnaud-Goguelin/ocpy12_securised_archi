@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import CompanyAlreadyExistsError, UserNotAllowedError
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.permissions import Permissions, require_roles
 from crm_epic_events.services import CompanyService
 from crm_epic_events.services.company.schemas import CompanyCreateInput, CompanyUpdateInput
 from crm_epic_events.utils import check_choice
@@ -51,7 +51,7 @@ class CompanyController(BaseController):
         self.view.display_companies(companies)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.COMPANY_CREATE)
     def handle_create(self) -> NavSignal:
         raw = self.view.prompt_create()
         try:
@@ -64,7 +64,7 @@ class CompanyController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.COMPANY_UPDATE)
     def handle_update(self) -> NavSignal:
 
         # improve app perf by filtering result by salesperson if user is not manager
@@ -102,7 +102,7 @@ class CompanyController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.COMPANY_DELETE)
     def handle_delete(self) -> NavSignal:
         companies = CompanyService.get_all(self.db)
         raw = self.view.prompt_select_company(companies)

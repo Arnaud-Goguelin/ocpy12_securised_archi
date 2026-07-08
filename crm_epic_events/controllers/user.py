@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.permissions import Permissions, require_roles
 from crm_epic_events.services import UserAssignRoleInput, UserService, UserUpdateInput
 from crm_epic_events.utils import check_choice
 from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
@@ -79,7 +79,7 @@ class UserController(BaseController):
             print_validation_errors(error)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.USER_UPDATE)
     def handle_update_profile_other(self) -> NavSignal:
         users = UserService.get_all(self.db)
         users.remove(self.user)
@@ -107,7 +107,7 @@ class UserController(BaseController):
             print_validation_errors(error)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.USER_ASSIGN_ROLE)
     def handle_assign_role(self) -> NavSignal:
         users = UserService.get_all(self.db)
         raw = self.view.prompt_select_user(users)
@@ -135,7 +135,7 @@ class UserController(BaseController):
             print_validation_errors(error)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.USER_DELETE)
     def handle_delete(self) -> NavSignal:
         users = UserService.get_all(self.db)
         users.remove(self.user)

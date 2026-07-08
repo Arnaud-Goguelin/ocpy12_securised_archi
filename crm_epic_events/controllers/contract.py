@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import UserIsNotOwnerError
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.permissions import Permissions, require_roles
 from crm_epic_events.services import ContractService, CustomerService, UserService
 from crm_epic_events.services.contract.schemas import ContractCreateInput, ContractUpdateInput
 from crm_epic_events.utils import check_choice
@@ -65,7 +65,7 @@ class ContractController(BaseController):
         self.view.display_contracts(contracts, title="Unpaid contracts")
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.CONTRACT_CREATE)
     def handle_create(self) -> NavSignal:
         customers = CustomerService.get_all(self.db)
         salespersons = UserService.get_all_by_role(Roles.SALES, self.db)
@@ -96,7 +96,7 @@ class ContractController(BaseController):
             print_validation_errors(error)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.CONTRACT_UPDATE)
     def handle_update(self) -> NavSignal:
         contracts = (
             ContractService.get_all(self.db)
@@ -129,7 +129,7 @@ class ContractController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.CONTRACT_DELETE)
     def handle_delete(self) -> NavSignal:
         contracts = ContractService.get_all(self.db)
         raw = self.view.prompt_select_contract(contracts)

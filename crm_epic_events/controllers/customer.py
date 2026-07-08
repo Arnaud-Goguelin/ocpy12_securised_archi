@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import UserIsNotOwnerError, UserNotAllowedError
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.permissions import Permissions, require_roles
 from crm_epic_events.services import CustomerService
 from crm_epic_events.services.customer.schemas import CustomerCreateInput, CustomerUpdateInput
 from crm_epic_events.utils import check_choice
@@ -53,7 +53,7 @@ class CustomerController(BaseController):
         self.view.display_customers(customers, title="All customers")
         return NavSignal.STAY
 
-    @require_roles(Roles.SALES)
+    @require_roles(*Permissions.CUSTOMER_CREATE)
     def handle_create(self) -> NavSignal:
         raw = self.view.prompt_create()
         try:
@@ -66,7 +66,7 @@ class CustomerController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.CUSTOMER_UPDATE)
     def handle_update(self) -> NavSignal:
 
         # improve app perf by filtering result by salesperson if user is not manager
@@ -109,7 +109,7 @@ class CustomerController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.CUSTOMER_DELETE)
     def handle_delete(self) -> NavSignal:
         customers = CustomerService.get_all(self.db)
         raw = self.view.prompt_select_customer(customers)
