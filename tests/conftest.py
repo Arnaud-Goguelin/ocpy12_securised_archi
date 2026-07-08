@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -7,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from crm_epic_events.models.database import Base
-from crm_epic_events.services import CustomerCreateInput, EventCreateInput, UserRegisterInput
+from crm_epic_events.services import ContractCreateInput, CustomerCreateInput, EventCreateInput, UserRegisterInput
 from crm_epic_events.services.authentication.service import AuthTokensService
 from crm_epic_events.utils import Roles
 from tests.factories import (
@@ -91,9 +92,11 @@ def clear_tokens():
 
 
 # ===== Customer fixtures =====
+
+
 @pytest.fixture
-def salesperson(db_session):
-    return UserDBFactory(role=Roles.SALES)
+def customer(db_session):
+    return CustomerDBFactory()
 
 
 @pytest.fixture
@@ -113,12 +116,46 @@ def customer_create_data(salesperson):
 
 
 @pytest.fixture
+def manager(db_session):
+    return UserDBFactory(role=Roles.MANAGER)
+
+
+@pytest.fixture
+def salesperson(db_session):
+    return UserDBFactory(role=Roles.SALES)
+
+
+@pytest.fixture
+def support(db_session):
+    return UserDBFactory(role=Roles.SUPPORT)
+
+
+@pytest.fixture
 def register_data() -> UserRegisterInput:
     return UserRegisterInput(
         first_name=fake.first_name(),
         last_name=fake.last_name(),
         email=fake.email(),
         password=SECURED_RAW_PASSWORD,
+    )
+
+
+# ===== Contract fixtures =====
+
+
+@pytest.fixture
+def contract(db_session):
+    return ContractDBFactory()
+
+
+@pytest.fixture
+def contract_create_data(signed_contract):
+    return ContractCreateInput(
+        customer_id=signed_contract.customer_id,
+        salesperson_id=signed_contract.salesperson_id,
+        status=signed_contract.status,
+        total_amount=Decimal("1000"),
+        remaining_amount=Decimal("500"),
     )
 
 
