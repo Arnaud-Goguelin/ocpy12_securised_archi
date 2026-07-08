@@ -5,23 +5,21 @@ import pytest
 from crm_epic_events.controllers.company import CompanyController
 from crm_epic_events.errors import CompanyAlreadyExistsError, UserNotAllowedError
 from crm_epic_events.services.company.service import CompanyService
-from crm_epic_events.utils.constants import NavSignal, Roles
-from tests.factories import CompanyFactory, UserFactory
+from crm_epic_events.utils.constants import NavSignal
+from tests.factories import CompanyFactory
 
 
 class TestCompanyControllerHandleList:
-    def test_list_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_list_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
 
         with patch.object(CompanyService, "get_all", return_value=[]):
             signal = ctrl.handle_list()
 
         assert signal == NavSignal.STAY
 
-    def test_list_calls_get_all(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_list_calls_get_all(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
 
         with patch.object(CompanyService, "get_all", return_value=[]) as mock_get:
             ctrl.handle_list()
@@ -30,9 +28,8 @@ class TestCompanyControllerHandleList:
 
 
 class TestCompanyControllerHandleCreate:
-    def test_manager_can_create(self, mock_db, capsys):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_manager_can_create(self, mock_db, capsys, manager):
+        ctrl = CompanyController(mock_db, manager)
         company = CompanyFactory()
 
         with (
@@ -45,9 +42,8 @@ class TestCompanyControllerHandleCreate:
 
         assert signal == NavSignal.STAY
 
-    def test_sales_can_create(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = CompanyController(mock_db, user)
+    def test_sales_can_create(self, mock_db, salesperson):
+        ctrl = CompanyController(mock_db, salesperson)
         company = CompanyFactory()
 
         with (
@@ -60,16 +56,14 @@ class TestCompanyControllerHandleCreate:
 
         assert signal == NavSignal.STAY
 
-    def test_support_cannot_create(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = CompanyController(mock_db, user)
+    def test_support_cannot_create(self, mock_db, support):
+        ctrl = CompanyController(mock_db, support)
 
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_create()
 
-    def test_duplicate_vat_shows_error(self, mock_db, capsys):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_duplicate_vat_shows_error(self, mock_db, capsys, manager):
+        ctrl = CompanyController(mock_db, manager)
         company = CompanyFactory()
 
         with (
@@ -86,9 +80,8 @@ class TestCompanyControllerHandleCreate:
 
 
 class TestCompanyControllerHandleDelete:
-    def test_manager_can_delete(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_manager_can_delete(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         companies = CompanyFactory.build_batch(2)
 
         with (
@@ -101,23 +94,20 @@ class TestCompanyControllerHandleDelete:
         mock_delete.assert_called_once_with(companies[0], mock_db)
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = CompanyController(mock_db, user)
+    def test_sales_cannot_delete(self, mock_db, salesperson):
+        ctrl = CompanyController(mock_db, salesperson)
 
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_support_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = CompanyController(mock_db, user)
+    def test_support_cannot_delete(self, mock_db, support):
+        ctrl = CompanyController(mock_db, support)
 
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         companies = CompanyFactory.build_batch(2)
 
         with (
@@ -128,9 +118,8 @@ class TestCompanyControllerHandleDelete:
 
         assert signal == NavSignal.STAY
 
-    def test_cancelled_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_cancelled_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
 
         with (
             patch.object(CompanyService, "get_all", return_value=[]),

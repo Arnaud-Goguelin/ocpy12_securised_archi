@@ -21,9 +21,8 @@ class TestHandleList:
                 signal = ctrl.handle_list()
             assert signal == NavSignal.STAY
 
-    def test_calls_get_all(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_calls_get_all(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         with patch.object(CompanyService, "get_all", return_value=[]) as mock_get:
             ctrl.handle_list()
         mock_get.assert_called_once_with(mock_db)
@@ -33,9 +32,8 @@ class TestHandleList:
 
 
 class TestHandleCreate:
-    def test_manager_can_create(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_manager_can_create(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         company = CompanyFactory()
         ctrl.view.prompt_create = MagicMock(return_value={"vat_number": company.vat_number, "name": company.name})
 
@@ -44,9 +42,8 @@ class TestHandleCreate:
 
         assert signal == NavSignal.STAY
 
-    def test_sales_can_create(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = CompanyController(mock_db, user)
+    def test_sales_can_create(self, mock_db, salesperson):
+        ctrl = CompanyController(mock_db, salesperson)
         company = CompanyFactory()
         ctrl.view.prompt_create = MagicMock(return_value={"vat_number": company.vat_number, "name": company.name})
 
@@ -55,15 +52,13 @@ class TestHandleCreate:
 
         assert signal == NavSignal.STAY
 
-    def test_support_cannot_create(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = CompanyController(mock_db, user)
+    def test_support_cannot_create(self, mock_db, support):
+        ctrl = CompanyController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_create()
 
-    def test_duplicate_vat_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_duplicate_vat_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         company = CompanyFactory()
         ctrl.view.prompt_create = MagicMock(return_value={"vat_number": company.vat_number, "name": company.name})
 
@@ -72,9 +67,8 @@ class TestHandleCreate:
 
         assert signal == NavSignal.STAY
 
-    def test_calls_service_create_with_correct_data(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_calls_service_create_with_correct_data(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         company = CompanyFactory()
         ctrl.view.prompt_create = MagicMock(return_value={"vat_number": company.vat_number, "name": company.name})
 
@@ -88,9 +82,8 @@ class TestHandleCreate:
 
 
 class TestHandleUpdate:
-    def test_manager_can_update(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_manager_can_update(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         companies = CompanyFactory.build_batch(2)
         ctrl.view.prompt_select_company = MagicMock(return_value="1")
         ctrl.view.prompt_update = MagicMock(return_value={"name": "New Name"})
@@ -103,9 +96,8 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_sales_can_update_own_company(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = CompanyController(mock_db, user)
+    def test_sales_can_update_own_company(self, mock_db, salesperson):
+        ctrl = CompanyController(mock_db, salesperson)
         companies = CompanyFactory.build_batch(2)
         ctrl.view.prompt_select_company = MagicMock(return_value="1")
         ctrl.view.prompt_update = MagicMock(return_value={"name": "New Name"})
@@ -118,15 +110,13 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_support_cannot_update(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = CompanyController(mock_db, user)
+    def test_support_cannot_update(self, mock_db, support):
+        ctrl = CompanyController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_update()
 
-    def test_cancelled_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_cancelled_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         ctrl.view.prompt_select_company = MagicMock(return_value=StandardInputs.CANCELLED)
 
         with patch.object(CompanyService, "get_all", return_value=[]):
@@ -134,9 +124,8 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         companies = CompanyFactory.build_batch(2)
         ctrl.view.prompt_select_company = MagicMock(return_value="invalid")
 
@@ -145,9 +134,8 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_nothing_to_update_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_nothing_to_update_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         companies = CompanyFactory.build_batch(2)
         ctrl.view.prompt_select_company = MagicMock(return_value="1")
         ctrl.view.prompt_update = MagicMock(return_value={})
@@ -162,9 +150,8 @@ class TestHandleUpdate:
 
 
 class TestHandleDelete:
-    def test_manager_can_delete(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_manager_can_delete(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         companies = CompanyFactory.build_batch(2)
         ctrl.view.prompt_select_company = MagicMock(return_value="1")
 
@@ -177,21 +164,18 @@ class TestHandleDelete:
         mock_delete.assert_called_once_with(companies[0], mock_db)
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = CompanyController(mock_db, user)
+    def test_sales_cannot_delete(self, mock_db, salesperson):
+        ctrl = CompanyController(mock_db, salesperson)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_support_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = CompanyController(mock_db, user)
+    def test_support_cannot_delete(self, mock_db, support):
+        ctrl = CompanyController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_cancelled_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_cancelled_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         ctrl.view.prompt_select_company = MagicMock(return_value=StandardInputs.CANCELLED)
 
         with patch.object(CompanyService, "get_all", return_value=[]):
@@ -199,9 +183,8 @@ class TestHandleDelete:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = CompanyController(mock_db, user)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
+        ctrl = CompanyController(mock_db, manager)
         companies = CompanyFactory.build_batch(2)
         ctrl.view.prompt_select_company = MagicMock(return_value="invalid")
 

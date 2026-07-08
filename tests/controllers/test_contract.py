@@ -134,9 +134,9 @@ class TestHandleUpdate:
 
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_update_other_salesperson_contract(self, mock_db, salesperson):
+    def test_sales_cannot_update_other_salesperson_contract(self, mock_db, salesperson, contract):
         other_salesperson = UserFactory(role=Roles.SALES)
-        contract = ContractFactory(salesperson_id=other_salesperson.id)
+        contract.salesperson_id = other_salesperson.id
         contract.salesperson = other_salesperson
         ctrl = ContractController(mock_db, salesperson)
         ctrl.view.prompt_select_contract = MagicMock(return_value="1")

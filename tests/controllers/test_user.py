@@ -22,9 +22,8 @@ class TestHandleList:
                 signal = ctrl.handle_list()
             assert signal == NavSignal.STAY
 
-    def test_filter_by_role_calls_get_all_by_role(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = UserController(mock_db, user)
+    def test_filter_by_role_calls_get_all_by_role(self, mock_db, manager):
+        ctrl = UserController(mock_db, manager)
         ctrl.view.display_role_filter_menu = MagicMock(return_value="1")  # first role = MANAGER
 
         with patch.object(UserService, "get_all_by_role", return_value=[]) as mock_get:
@@ -32,9 +31,8 @@ class TestHandleList:
 
         mock_get.assert_called_once()
 
-    def test_invalid_filter_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.MANAGER)
-        ctrl = UserController(mock_db, user)
+    def test_invalid_filter_returns_stay(self, mock_db, manager):
+        ctrl = UserController(mock_db, manager)
         ctrl.view.display_role_filter_menu = MagicMock(return_value="invalid")
 
         signal = ctrl.handle_list()
@@ -57,9 +55,8 @@ class TestHandleUpdateProfileSelf:
 
             assert signal == NavSignal.STAY
 
-    def test_nothing_to_update_returns_stay(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = UserController(mock_db, user)
+    def test_nothing_to_update_returns_stay(self, mock_db, salesperson):
+        ctrl = UserController(mock_db, salesperson)
         ctrl.view.prompt_update_profile = MagicMock(return_value={})
 
         signal = ctrl.handle_update_profile_self()
@@ -71,35 +68,30 @@ class TestHandleUpdateProfileSelf:
 
 
 class TestHandleUpdateProfileOther:
-    def test_manager_can_update_other_user(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        other_user = UserFactory(role=Roles.SALES)
+    def test_manager_can_update_other_user(self, mock_db, manager, salesperson):
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value="1")
         ctrl.view.prompt_update_profile = MagicMock(return_value={"first_name": "Updated"})
 
         with (
-            patch.object(UserService, "get_all", return_value=[other_user, manager]),
-            patch.object(UserService, "update_profile", return_value=other_user),
+            patch.object(UserService, "get_all", return_value=[salesperson, manager]),
+            patch.object(UserService, "update_profile", return_value=salesperson),
         ):
             signal = ctrl.handle_update_profile_other()
 
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_update_other_user(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = UserController(mock_db, user)
+    def test_sales_cannot_update_other_user(self, mock_db, salesperson):
+        ctrl = UserController(mock_db, salesperson)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_update_profile_other()
 
-    def test_support_cannot_update_other_user(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = UserController(mock_db, user)
+    def test_support_cannot_update_other_user(self, mock_db, support):
+        ctrl = UserController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_update_profile_other()
 
-    def test_cancelled_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
+    def test_cancelled_returns_stay(self, mock_db, manager):
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value=StandardInputs.CANCELLED)
 
@@ -108,8 +100,7 @@ class TestHandleUpdateProfileOther:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
         ctrl = UserController(mock_db, manager)
         users = UserFactory.build_batch(2)
         ctrl.view.prompt_select_user = MagicMock(return_value="invalid")
@@ -119,14 +110,12 @@ class TestHandleUpdateProfileOther:
 
         assert signal == NavSignal.STAY
 
-    def test_nothing_to_update_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        other_user = UserFactory(role=Roles.SALES)
+    def test_nothing_to_update_returns_stay(self, mock_db, manager, salesperson):
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value="1")
         ctrl.view.prompt_update_profile = MagicMock(return_value={})
 
-        with patch.object(UserService, "get_all", return_value=[other_user, manager]):
+        with patch.object(UserService, "get_all", return_value=[salesperson, manager]):
             signal = ctrl.handle_update_profile_other()
 
         assert signal == NavSignal.STAY
@@ -136,35 +125,30 @@ class TestHandleUpdateProfileOther:
 
 
 class TestHandleAssignRole:
-    def test_manager_can_assign_role(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        target = UserFactory(role=Roles.SALES)
+    def test_manager_can_assign_role(self, mock_db, manager, salesperson):
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value="1")
         ctrl.view.prompt_assign_role = MagicMock(return_value="1")  # first role
 
         with (
-            patch.object(UserService, "get_all", return_value=[target]),
-            patch.object(UserService, "assign_role", return_value=target),
+            patch.object(UserService, "get_all", return_value=[salesperson]),
+            patch.object(UserService, "assign_role", return_value=salesperson),
         ):
             signal = ctrl.handle_assign_role()
 
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_assign_role(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = UserController(mock_db, user)
+    def test_sales_cannot_assign_role(self, mock_db, salesperson):
+        ctrl = UserController(mock_db, salesperson)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_assign_role()
 
-    def test_support_cannot_assign_role(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = UserController(mock_db, user)
+    def test_support_cannot_assign_role(self, mock_db, support):
+        ctrl = UserController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_assign_role()
 
-    def test_cancelled_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
+    def test_cancelled_returns_stay(self, mock_db, manager):
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value=StandardInputs.CANCELLED)
 
@@ -173,8 +157,7 @@ class TestHandleAssignRole:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
         ctrl = UserController(mock_db, manager)
         users = UserFactory.build_batch(2)
         ctrl.view.prompt_select_user = MagicMock(return_value="invalid")
@@ -184,14 +167,12 @@ class TestHandleAssignRole:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_role_choice_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        target = UserFactory(role=Roles.SALES)
+    def test_invalid_role_choice_returns_stay(self, mock_db, manager, salesperson):
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value="1")
         ctrl.view.prompt_assign_role = MagicMock(return_value="invalid")
 
-        with patch.object(UserService, "get_all", return_value=[target]):
+        with patch.object(UserService, "get_all", return_value=[salesperson]):
             signal = ctrl.handle_assign_role()
 
         assert signal == NavSignal.STAY
@@ -201,35 +182,31 @@ class TestHandleAssignRole:
 
 
 class TestHandleDelete:
-    def test_manager_can_delete(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
-        target = UserFactory(role=Roles.SALES)
+    def test_manager_can_delete(self, mock_db, manager, salesperson):
         ctrl = UserController(mock_db, manager)
+
         ctrl.view.prompt_select_user = MagicMock(return_value="1")
 
         with (
-            patch.object(UserService, "get_all", return_value=[target, manager]),
+            patch.object(UserService, "get_all", return_value=[salesperson, manager]),
             patch.object(UserService, "delete") as mock_delete,
         ):
             signal = ctrl.handle_delete()
 
-        mock_delete.assert_called_once_with(target, mock_db)
+        mock_delete.assert_called_once_with(salesperson, mock_db)
         assert signal == NavSignal.STAY
 
-    def test_sales_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SALES)
-        ctrl = UserController(mock_db, user)
+    def test_sales_cannot_delete(self, mock_db, salesperson):
+        ctrl = UserController(mock_db, salesperson)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_support_cannot_delete(self, mock_db):
-        user = UserFactory(role=Roles.SUPPORT)
-        ctrl = UserController(mock_db, user)
+    def test_support_cannot_delete(self, mock_db, support):
+        ctrl = UserController(mock_db, support)
         with pytest.raises(UserNotAllowedError):
             ctrl.handle_delete()
 
-    def test_cancelled_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
+    def test_cancelled_returns_stay(self, mock_db, manager):
         ctrl = UserController(mock_db, manager)
         ctrl.view.prompt_select_user = MagicMock(return_value=StandardInputs.CANCELLED)
 
@@ -238,8 +215,7 @@ class TestHandleDelete:
 
         assert signal == NavSignal.STAY
 
-    def test_invalid_selection_returns_stay(self, mock_db):
-        manager = UserFactory(role=Roles.MANAGER)
+    def test_invalid_selection_returns_stay(self, mock_db, manager):
         ctrl = UserController(mock_db, manager)
         users = UserFactory.build_batch(2)
         ctrl.view.prompt_select_user = MagicMock(return_value="invalid")
