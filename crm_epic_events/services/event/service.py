@@ -2,7 +2,8 @@ import uuid
 
 from typing import TYPE_CHECKING
 
-from crm_epic_events.models import Event
+from crm_epic_events.errors import ContractNotFoundError, ContractNotSignedError
+from crm_epic_events.models import Contract, Event
 from crm_epic_events.utils import db_transaction
 
 
@@ -38,6 +39,13 @@ class EventService:
         Only SALES members can create an event, for a customer they own
         with a signed contract. Permission checks are done in the controller.
         """
+
+        contract = Contract.get_by_id(data.contract_id, db)
+        if not contract:
+            raise ContractNotFoundError()
+        if not contract.status:
+            raise ContractNotSignedError()
+
         with db_transaction(db, "Creating event"):
             return Event.create(
                 contract_id=data.contract_id,

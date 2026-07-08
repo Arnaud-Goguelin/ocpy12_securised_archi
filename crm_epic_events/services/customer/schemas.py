@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr
 
 class CustomerCreateInput(BaseModel):
     salesperson_id: uuid.UUID
-    company_vat: str
+    vat_number: str
     company_name: str | None = None  # used for auto-creation if company not found
     email: EmailStr
     first_name: str
@@ -37,6 +37,6 @@ class CustomerResponse(BaseModel):
     phone: str
     company_name: str
     created_at: datetime
-    updated_at: datetime
+    last_updated_at: datetime
 
     model_config = {"from_attributes": True}

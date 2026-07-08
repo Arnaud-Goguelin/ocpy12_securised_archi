@@ -1,3 +1,4 @@
+import contextlib
 import json
 import uuid
 
@@ -14,7 +15,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from crm_epic_events.config import Config
 from crm_epic_events.errors import CustomInvalidCredentialsError, CustomInvalidTokenError
 from crm_epic_events.models.user import User
-from crm_epic_events.utils import exit_app, print_success
+from crm_epic_events.utils import print_success
 
 from .schemas import AccessTokenPayload, RefreshTokenPayload
 
@@ -25,15 +26,16 @@ if TYPE_CHECKING:
 
 class AuthTokensService:
     @staticmethod
-    def _resolve_token_file() -> Path:
+    def _resolve_token_file(for_lockout: bool = False) -> Path:
         """
         Returns the token file path based on APP_ENV.
         - 'local': writes inside the app directory (visible via bind mount in Docker)
         - anything else ('prod', unset...): writes in the user config directory
         """
+        file_name = ".session.json" if not for_lockout else ".lockout.json"
         if Config.APP_ENV == "local":
-            return Path("/usr/src/app") / ".session.json"
-        return Path.home() / ".config" / "crm_epic_events" / "session.json"
+            return Path("/usr/src/app") / file_name
+        return Path.home() / ".config" / "crm_epic_events" / file_name
 
     @staticmethod
     def generate_access_token(user: "User") -> str:
@@ -82,6 +84,45 @@ class AuthTokensService:
         if token_file.exists():
             token_file.unlink()
 
+    @classmethod
+    def save_lockout(cls, duration_seconds: int) -> None:
+        token_file = cls._resolve_token_file(for_lockout=True)
+        token_file.parent.mkdir(parents=True, exist_ok=True)
+        existing = {}
+        if token_file.exists():
+            with contextlib.suppress(json.JSONDecodeError, OSError):
+                existing = json.loads(token_file.read_text())
+        existing["locked_until"] = (datetime.now(UTC) + timedelta(seconds=duration_seconds)).isoformat()
+        token_file.write_text(json.dumps(existing))
+
+    @classmethod
+    def get_lockout_remaining(cls) -> int:
+        """Returns the number of seconds remaining in lockout, or 0 if not locked."""
+        token_file = cls._resolve_token_file(for_lockout=True)
+        if not token_file.exists():
+            return 0
+        try:
+            data = json.loads(token_file.read_text())
+            locked_until = data.get("locked_until")
+            if not locked_until:
+                return 0
+            remaining = (datetime.fromisoformat(locked_until) - datetime.now(UTC)).total_seconds()
+            return max(0, int(remaining))
+        except (json.JSONDecodeError, OSError, ValueError):
+            return 0
+
+    @classmethod
+    def clear_lockout(cls) -> None:
+        token_file = cls._resolve_token_file(for_lockout=True)
+        if not token_file.exists():
+            return
+        try:
+            data = json.loads(token_file.read_text())
+            data.pop("locked_until", None)
+            token_file.write_text(json.dumps(data))
+        except (json.JSONDecodeError, OSError):
+            pass
+
 
 class AuthService:
     # factice hash to prevent timing attacks even if user doesn't exist
@@ -121,7 +162,6 @@ class AuthService:
     def logout() -> None:
         AuthTokensService.clear_tokens()
         print_success("Logged out successfully")
-        exit_app()
 
     @classmethod
     def get_current_user(cls, db) -> "User | None ":
@@ -138,11 +178,14 @@ class AuthService:
             return User.get_by_id(payload["id"], db)
         except ExpiredSignatureError:
             return cls._refresh(tokens, db)
+        except NoResultFound:
+            AuthTokensService.clear_tokens()
+            raise CustomInvalidTokenError(message="Session refers to a deleted user.") from None
         except JWTInvalidTokenError:
             raise CustomInvalidTokenError() from None
 
     @staticmethod
-    def _refresh(tokens: dict, db: "Session") -> "User | None ":
+    def _refresh(tokens: dict, db: "Session") -> "User | None":
         """
         Silently issues a new access token using the refresh token.
         Returns the User if successful, None if refresh token is also expired.
@@ -150,12 +193,12 @@ class AuthService:
         try:
             payload = decode(tokens["refresh_token"], Config.SECRET_KEY, algorithms=[Config.AUTH_ALGORITHM])
             user = User.get_by_id(payload["id"], db)
-            if not user:
-                AuthTokensService.clear_tokens()
-                return None
             new_access_token = AuthTokensService.generate_access_token(user)
             AuthTokensService.save_tokens(new_access_token, tokens["refresh_token"])
             return user
+        except NoResultFound:
+            AuthTokensService.clear_tokens()
+            return None
         except (ExpiredSignatureError, JWTInvalidTokenError):
             AuthTokensService.clear_tokens()
             return None

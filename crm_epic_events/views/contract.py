@@ -1,32 +1,40 @@
 from typing import TYPE_CHECKING
 
+from crm_epic_events.utils import StandardInputs
 from crm_epic_events.utils.printers import print_info, print_option, print_title, prompt
 
 
 if TYPE_CHECKING:
-    from crm_epic_events.models import Contract, Customer
+    from crm_epic_events.models import Contract, Customer, User
 
 
 class ContractView:
     # --- Prompts ---
 
     @staticmethod
-    def prompt_create(customers: list["Customer"]) -> dict:
+    def prompt_create(customers: list["Customer"], salepersons: list["User"]) -> tuple[str, str, dict]:
         print_title("Create new contract")
+
         for i, customer in enumerate(customers, start=1):
             print_option(str(i), f"{customer.first_name} {customer.last_name}  |  {customer.email}")
-        raw = prompt("Select a customer").strip()
-        try:
-            customer = customers[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
+        raw_customer = prompt("Select a customer").strip()
 
-        return {
-            "customer_id": customer.id,
-            "total_amount": prompt("Total amount").strip(),  # return a str but Pydantic will convert it to Decimal
-            "remaining_amount": prompt("Total amount").strip(),
-            "status": prompt("Already signed? (y/N)").strip().lower() == "y",
-        }
+        for i, saleperson in enumerate(salepersons, start=1):
+            print_option(str(i), f"{saleperson.first_name} {saleperson.last_name}  |  {saleperson.email}")
+        raw_saleperson = prompt("Select a salesperson").strip()
+
+        return (
+            raw_customer,
+            raw_saleperson,
+            {
+                "total_amount": prompt("Total amount").strip(),
+                "remaining_amount": prompt("Remaining amount").strip(),
+                "status": prompt(f"Already signed? ({StandardInputs.VALIDATION}/{StandardInputs.CANCELLED})")
+                .strip()
+                .lower()
+                == StandardInputs.VALIDATION,
+            },
+        )
 
     @staticmethod
     def prompt_update(target: "Contract") -> dict:
@@ -43,28 +51,22 @@ class ContractView:
             data["remaining_amount"] = raw_remaining
 
         raw_status = prompt(f"Signed? (current: {'Yes' if target.status else 'No'}) (y/n)").strip().lower()
-        if raw_status in ("y", "n"):
-            data["status"] = raw_status == "y"
+        if raw_status in (StandardInputs.VALIDATION, StandardInputs.CANCELLED):
+            data["status"] = raw_status == StandardInputs.VALIDATION
 
         return data
 
     @staticmethod
-    def prompt_select_contract(contracts: list["Contract"]) -> "Contract | None":
+    def prompt_select_contract(contracts: list["Contract"]) -> str:
         for i, contract in enumerate(contracts, start=1):
             print_option(
                 str(i),
-                f"ID: {contract.id[:8]}…  |  Customer: {contract.customer_id}"
+                f"ID: {contract.id}  |  Customer: {contract.customer.first_name} {contract.customer.last_name}"
                 f"  |  Total: {contract.total_amount}  |  Remaining: {contract.remaining_amount}"
                 f"  |  Signed: {'Yes' if contract.status else 'No'}",
             )
-        print_option("Q", "Cancel")
-        raw = prompt("Select a contract").strip().upper()
-        if raw == "Q":
-            return None
-        try:
-            return contracts[int(raw) - 1]
-        except (ValueError, IndexError):
-            raise ValueError(f"Invalid selection: '{raw}'") from None
+        print_option(StandardInputs.CANCELLED, "Cancel")
+        return prompt("Select a contract").strip().upper()
 
     # --- Display ---
 
@@ -76,9 +78,10 @@ class ContractView:
             return
         for contract in contracts:
             print_info(
-                f"  ID: {contract.id[:8]}…"
-                f"  |  Customer: {contract.customer_id}"
-                f"  |  Salesperson: {contract.salesperson_id}"
+                f"  ID: {contract.id}"
+                f"  |  Customer: {contract.customer.first_name} {contract.customer.last_name}"
+                f"  |  Salesperson: {contract.salesperson.first_name} {contract.salesperson.last_name} "
+                f"{contract.salesperson.id}"
                 f"  |  Total: {contract.total_amount:.2f}"
                 f"  |  Remaining: {contract.remaining_amount:.2f}"
                 f"  |  Signed: {'Yes' if contract.status else 'No'}"

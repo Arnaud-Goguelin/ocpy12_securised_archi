@@ -1,17 +1,24 @@
+import uuid
+
 from decimal import Decimal
 
 from pydantic import BaseModel, model_validator
 
 
 class ContractCreateInput(BaseModel):
-    customer_id: str
+    salesperson_id: uuid.UUID
+    customer_id: uuid.UUID
     total_amount: Decimal
     remaining_amount: Decimal
     status: bool = False
 
     @model_validator(mode="after")
     def remaining_not_greater_than_total(self) -> "ContractCreateInput":
-        if self.remaining_amount > self.total_amount:
+        if (
+            self.total_amount is not None
+            and self.remaining_amount is not None
+            and self.remaining_amount > self.total_amount
+        ):
             raise ValueError("remaining_amount cannot be greater than total_amount.")
         return self
 

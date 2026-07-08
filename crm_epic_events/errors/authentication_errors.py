@@ -15,3 +15,9 @@ class CustomInvalidTokenError(CustomAuthenticationError):
     def __init__(self, **kwargs):
         kwargs.setdefault("message", "Invalid token")
         super().__init__(**kwargs)
+
+
+class UserNotAuthenticatedError(CustomAuthenticationError):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("message", "You must be logged in to perform this action.")
+        super().__init__(**kwargs)

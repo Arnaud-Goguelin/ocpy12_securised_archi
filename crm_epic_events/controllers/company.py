@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
-from crm_epic_events.errors import UserNotAllowedError
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.errors import CompanyAlreadyExistsError, UserNotAllowedError
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import CompanyService
 from crm_epic_events.services.company.schemas import CompanyCreateInput, CompanyUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import CompanyView
 
@@ -26,9 +26,9 @@ class CompanyController(BaseController):
         self.view = CompanyView()
         self.menu_items = [
             MenuItem("1", "List all companies", self.handle_list),
-            MenuItem("2", "Create a company", self.handle_create, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("3", "Update a company", self.handle_update, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("4", "Delete a company", self.handle_delete, [Roles.MANAGER]),
+            MenuItem("2", "Create a company", self.handle_create, [*Permissions.COMPANY_CREATE]),
+            MenuItem("3", "Update a company", self.handle_update, [*Permissions.COMPANY_UPDATE]),
+            MenuItem("4", "Delete a company", self.handle_delete, [*Permissions.COMPANY_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 
@@ -51,20 +51,20 @@ class CompanyController(BaseController):
         self.view.display_companies(companies)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.COMPANY_CREATE)
     def handle_create(self) -> NavSignal:
         raw = self.view.prompt_create()
         try:
             data = CompanyCreateInput(**raw)
-            company = CompanyService.create(self.user, data, self.db)
+            company = CompanyService.create(data, self.db)
             print_success(f"Company '{company.name}' created successfully.")
         except ValidationError as error:
             print_validation_errors(error)
-        except (UserNotAllowedError, ValueError) as error:
-            print_error(str(error) if isinstance(error, ValueError) else error.message)
+        except (UserNotAllowedError, CompanyAlreadyExistsError) as error:
+            print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.COMPANY_UPDATE)
     def handle_update(self) -> NavSignal:
 
         # improve app perf by filtering result by salesperson if user is not manager
@@ -75,19 +75,17 @@ class CompanyController(BaseController):
             else CompanyService.get_by_customers_salesperson(self.user.id, self.db)
         )
 
+        raw = self.view.prompt_select_company(companies)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_company(companies)
-        except ValueError as error:
-            print_error(str(error))
+            target = companies[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
             return NavSignal.STAY
-
-        # this check is redundant because if self.user is not manager we have already filter
-        # companies by salesperson
-        # its just show both way to check at if
-        self.check_ownership(self.user.id)
 
         raw = self.view.prompt_update(target)
         if not raw:
@@ -96,7 +94,7 @@ class CompanyController(BaseController):
 
         try:
             data = CompanyUpdateInput(**raw)
-            CompanyService.update(self.user, target, data, self.db)
+            CompanyService.update(target, data, self.db)
             print_success("Company updated successfully.")
         except ValidationError as error:
             print_validation_errors(error)
@@ -104,13 +102,16 @@ class CompanyController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.COMPANY_DELETE)
     def handle_delete(self) -> NavSignal:
         companies = CompanyService.get_all(self.db)
+        raw = self.view.prompt_select_company(companies)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_company(companies)
-        except ValueError as error:
-            print_error(str(error))
+            target = companies[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
@@ -119,7 +120,7 @@ class CompanyController(BaseController):
         # no ownship check needed here, since only the manager can delete a company
 
         try:
-            CompanyService.delete(self.user, target, self.db)
+            CompanyService.delete(target, self.db)
             print_success(f"Company '{target.name}' deleted.")
         except UserNotAllowedError as error:
             print_error(error.message)

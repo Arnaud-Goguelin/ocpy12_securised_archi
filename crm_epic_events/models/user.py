@@ -6,8 +6,8 @@ from sqlalchemy import String, Uuid, select
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
-from crm_epic_events.services.user.schemas import UserUpdateInput
-from crm_epic_events.utils.constants import Roles
+from crm_epic_events.permissions import Roles
+from crm_epic_events.services.user.schemas import UserAssignRoleInput, UserUpdateInput
 
 
 if TYPE_CHECKING:
@@ -89,7 +89,7 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String)
 
     @classmethod
-    def get_by_email(cls, _email: str, db: Session) -> "User":
+    def get_by_email(cls, _email: str, db: Session) -> "User | None":
         query = select(cls).filter_by(email=_email)
         result = db.execute(query)
         return result.scalar_one()
@@ -107,7 +107,7 @@ class User(Base):
         return list(result.scalars().all())
 
     @classmethod
-    def get_all_by_role(cls, role: Roles, db: "Session") -> list["User"]:
+    def get_all_by_role(cls, role: "Roles", db: "Session") -> list["User"]:
         query = select(cls).filter_by(role=role)
         result = db.execute(query)
         return list(result.scalars().all())
@@ -126,7 +126,7 @@ class User(Base):
         db.refresh(user)
         return user
 
-    def update(self, data: UserUpdateInput, db: "Session") -> "User":
+    def update(self, data: "UserUpdateInput | UserAssignRoleInput", db: "Session") -> "User":
         for key, value in data.model_dump(exclude_none=True).items():
             setattr(self, key, value)
         db.flush()

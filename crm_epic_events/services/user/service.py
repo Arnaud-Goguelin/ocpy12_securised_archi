@@ -1,15 +1,21 @@
+import contextlib
+
 from typing import TYPE_CHECKING
 
 import bcrypt
 
+from sqlalchemy.exc import NoResultFound
+
+from crm_epic_events.errors import UserAlreadyExistsError
 from crm_epic_events.models import User
-from crm_epic_events.utils import Roles, db_transaction
+from crm_epic_events.permissions import Roles
+from crm_epic_events.utils import db_transaction
 
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
-    from crm_epic_events.services.user.schemas import UserRegisterInput, UserUpdateInput
+    from crm_epic_events.services.user.schemas import UserAssignRoleInput, UserRegisterInput, UserUpdateInput
 
 
 class UserService:
@@ -33,10 +39,12 @@ class UserService:
         Public registration — no auth required.
         Role defaults to SALES, a MANAGER must assign the real role afterwards.
         """
+        user = None
+        with contextlib.suppress(NoResultFound):
+            user = User.get_by_email(data.email, db)
 
-        existing = User.get_by_email(data.email, db)
-        if existing:
-            raise ValueError(f"Email '{data.email}' is already in use.")
+        if user:
+            raise UserAlreadyExistsError()
 
         hashed = UserService._hash_password(data.password)
         with db_transaction(db, "Registering user"):
@@ -54,11 +62,11 @@ class UserService:
         A MANAGER can update any user's profile.
         Role changes are handled separately via assign_role().
         """
-        is_manager = current_user.role == Roles.MANAGER
-        if not is_manager:
+        if current_user.role != Roles.MANAGER:
             data.role = None
-
-        user_to_update = target_user if is_manager else current_user
+            user_to_update = current_user
+        else:
+            user_to_update = target_user
 
         if data.password:
             data.password = UserService._hash_password(data.password)
@@ -69,7 +77,7 @@ class UserService:
     @staticmethod
     def assign_role(
         target_user: "User",
-        data: "UserUpdateInput",
+        data: "UserAssignRoleInput",
         db: "Session",
     ) -> "User":
         with db_transaction(db, "Assigning role"):

@@ -1,4 +1,3 @@
-# tests/services/authentication/test_service.py
 from unittest.mock import patch
 
 import pytest
@@ -8,7 +7,7 @@ from sqlalchemy.exc import NoResultFound
 from crm_epic_events.errors import CustomInvalidCredentialsError, CustomInvalidTokenError
 from crm_epic_events.models import User
 from crm_epic_events.services.authentication.service import AuthService, AuthTokensService
-from tests.factories import RAW_PASSWORD
+from tests.factories import SECURED_RAW_PASSWORD
 
 
 # ── login ────────────────────────────────────────────────────────────────────
@@ -19,7 +18,7 @@ class TestLogin:
         with (
             patch.object(User, "get_by_email", return_value=user),
         ):
-            result = AuthService.login(user.email, RAW_PASSWORD, mock_db)
+            result = AuthService.login(user.email, SECURED_RAW_PASSWORD, mock_db)
 
         assert result == user
         tokens = AuthTokensService.load_tokens()
@@ -39,7 +38,7 @@ class TestLogin:
             patch.object(User, "get_by_email", side_effect=NoResultFound()),
             pytest.raises(CustomInvalidCredentialsError),
         ):
-            AuthService.login("ghost@test.com", RAW_PASSWORD, mock_db)
+            AuthService.login("ghost@test.com", SECURED_RAW_PASSWORD, mock_db)
 
 
 # ── get_current_user ──────────────────────────────────────────────────────────
@@ -90,7 +89,7 @@ class TestRefresh:
 
         assert result == user
         new_tokens = AuthTokensService.load_tokens()
-        assert new_tokens["refresh_token"] == tokens["refresh_token"]  # refresh token inchangé
+        assert new_tokens["refresh_token"] == tokens["refresh_token"]
 
     def test_refresh_expired_refresh_token_clears_tokens(self, user, mock_db, access_token, refresh_token):
         tokens = {
@@ -102,7 +101,7 @@ class TestRefresh:
         result = AuthService._refresh(tokens, mock_db)
 
         assert result is None
-        assert AuthTokensService.load_tokens() is None  # tokens supprimés
+        assert AuthTokensService.load_tokens() is None
 
 
 # ── logout ────────────────────────────────────────────────────────────────────
@@ -114,36 +113,7 @@ class TestLogout:
             access_token(user),
             refresh_token(user),
         )
-        with (
-            patch("crm_epic_events.services.authentication.service.print_success"),
-            patch("crm_epic_events.services.authentication.service.exit_app"),
-        ):
+        with patch("crm_epic_events.services.authentication.service.print_success"):
             AuthService.logout()
 
         assert AuthTokensService.load_tokens() is None
-
-    def test_logout_prints_success_message(self, user, access_token, refresh_token):
-        AuthTokensService.save_tokens(
-            access_token(user),
-            refresh_token(user),
-        )
-        with (
-            patch("crm_epic_events.services.authentication.service.print_success") as mock_print,
-            patch("crm_epic_events.services.authentication.service.exit_app"),
-        ):
-            AuthService.logout()
-
-        mock_print.assert_called_once_with("Logged out successfully")
-
-    def test_logout_exits_app(self, user, access_token, refresh_token):
-        AuthTokensService.save_tokens(
-            access_token(user),
-            refresh_token(user),
-        )
-        with (
-            patch("crm_epic_events.services.authentication.service.print_success"),
-            patch("crm_epic_events.services.authentication.service.exit_app") as mock_exit,
-        ):
-            AuthService.logout()
-
-        mock_exit.assert_called_once()

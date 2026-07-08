@@ -4,11 +4,11 @@ from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.errors import UserIsNotOwnerError, UserNotAllowedError
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import CustomerService
 from crm_epic_events.services.customer.schemas import CustomerCreateInput, CustomerUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import CustomerView, MainMenuView
 
@@ -25,11 +25,14 @@ class CustomerController(BaseController):
         self.user = user
         self.view = CustomerView()
         self.menu_items = [
-            MenuItem("1", "List all customers", self.handle_list),
-            MenuItem("2", "List my customers", self.handle_list_mine, [Roles.SALES]),
-            MenuItem("3", "Create a customer", self.handle_create, [Roles.SALES]),
-            MenuItem("4", "Update a customer", self.handle_update, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("5", "Delete a customer", self.handle_delete, [Roles.MANAGER]),
+            MenuItem(
+                "1",
+                "List all customers" if self.user.role == Roles.MANAGER else "List my customers",
+                self.handle_list,
+            ),
+            MenuItem("2", "Create a customer", self.handle_create, [*Permissions.CUSTOMER_CREATE]),
+            MenuItem("3", "Update a customer", self.handle_update, [*Permissions.CUSTOMER_UPDATE]),
+            MenuItem("4", "Delete a customer", self.handle_delete, [*Permissions.CUSTOMER_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 
@@ -50,11 +53,11 @@ class CustomerController(BaseController):
         self.view.display_customers(customers, title="All customers")
         return NavSignal.STAY
 
-    @require_roles(Roles.SALES)
+    @require_roles(*Permissions.CUSTOMER_CREATE)
     def handle_create(self) -> NavSignal:
         raw = self.view.prompt_create()
         try:
-            data = CustomerCreateInput(**raw)
+            data = CustomerCreateInput(salesperson_id=self.user.id, **raw)
             customer = CustomerService.create(self.user, data, self.db)
             print_success(f"Customer '{customer.first_name} {customer.last_name}' created successfully.")
         except ValidationError as error:
@@ -63,7 +66,7 @@ class CustomerController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.CUSTOMER_UPDATE)
     def handle_update(self) -> NavSignal:
 
         # improve app perf by filtering result by salesperson if user is not manager
@@ -74,10 +77,13 @@ class CustomerController(BaseController):
             else CustomerService.get_all_by_salesperson(self.user, self.db)
         )
 
+        raw = self.view.prompt_select_customer(customers)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_customer(customers)
-        except ValueError as error:
-            print_error(str(error))
+            target = customers[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
@@ -103,13 +109,16 @@ class CustomerController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.CUSTOMER_DELETE)
     def handle_delete(self) -> NavSignal:
         customers = CustomerService.get_all(self.db)
+        raw = self.view.prompt_select_customer(customers)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_customer(customers)
-        except ValueError as error:
-            print_error(str(error))
+            target = customers[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:

@@ -29,9 +29,9 @@ class CustomerService:
         """
 
         # Auto-create company if not found — stays in the same transaction
-        company = CompanyService.get_by_vat(data.company_vat, db)
+        company = CompanyService.get_by_vat(data.vat_number, db)
         if not company:
-            company = CompanyService.create(current_user, data, db)
+            company = CompanyService.create(data, db)
 
         with db_transaction(db, "Creating customer"):
             return Customer.create(
@@ -55,5 +55,10 @@ class CustomerService:
 
     @staticmethod
     def delete(target_customer: "Customer", db: "Session") -> None:
+        company_vat = target_customer.company_vat
+        current_company = target_customer.company
         with db_transaction(db, "Deleting customer"):
             target_customer.delete(db)
+            remaining = Customer.get_all_by_company_vat(company_vat, db)
+            if not remaining:
+                current_company.delete_by_vat(company_vat, db)

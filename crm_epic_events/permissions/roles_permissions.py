@@ -1,12 +1,16 @@
 import functools
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from crm_epic_events.errors import UserNotAllowedError
-from crm_epic_events.utils.constants import Roles
 
 
-def require_roles(*allowed_roles: Roles) -> Callable:
+if TYPE_CHECKING:
+    from crm_epic_events.utils.constants import Roles
+
+
+def require_roles(*allowed_roles: "Roles") -> Callable:
     """
     Decorator that restricts access to a controller method based on the current user's role.
 

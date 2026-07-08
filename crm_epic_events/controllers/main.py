@@ -6,11 +6,15 @@ from crm_epic_events.controllers.base import BaseController
 from crm_epic_events.controllers.company import CompanyController
 from crm_epic_events.controllers.contract import ContractController
 from crm_epic_events.controllers.customer import CustomerController
+from crm_epic_events.controllers.event import EventController
 from crm_epic_events.controllers.user import UserController
+from crm_epic_events.errors import CustomAuthenticationError
+from crm_epic_events.errors.user_errors import CustomUserError
 from crm_epic_events.models import User
 from crm_epic_events.services import UserRegisterInput, UserService
-from crm_epic_events.services.authentication.service import AuthService
+from crm_epic_events.services.authentication.service import AuthService, AuthTokensService
 from crm_epic_events.utils import (
+    GenericMessages,
     MenuItem,
     StandardInputs,
     check_choice,
@@ -19,6 +23,7 @@ from crm_epic_events.utils import (
     print_success,
     print_validation_errors,
 )
+from crm_epic_events.utils.countdown import countdown
 from crm_epic_events.views import LoginView, MainMenuView, UserView
 
 
@@ -45,7 +50,7 @@ class MainController(BaseController):
             MenuItem("3", "Events", self.handle_events_menu),
             MenuItem("4", "Company", self.handle_company_menu),
             MenuItem("5", "Users", self.handle_users_menu),
-            MenuItem("6", "Logout", AuthService.logout),
+            MenuItem("6", "Logout", self.handle_logout),
             MenuItem(StandardInputs.CANCELLED, "Quit", self.exit_app),
         ]
         self.guest_menu_items = [
@@ -53,10 +58,17 @@ class MainController(BaseController):
             MenuItem("2", "Create account", self.handle_register),
             MenuItem(StandardInputs.CANCELLED, "Quit", self.exit_app),
         ]
+        self.auth_error_count = 0
 
     def handle_main_menu(self):
         while True:
             if not self.user:
+                remaining = AuthTokensService.get_lockout_remaining()
+                if remaining > 0:
+                    print_error(f"Too many failed login attempts. Please try again in {remaining}s.")
+                    countdown(GenericMessages.MAIN_MENU_RETURN, remaining)
+                    self.handle_main_menu()
+
                 choice = self.main_view.display(self.guest_menu_items)
                 item = check_choice(choice, self.guest_menu_items)
                 if item is not None:
@@ -70,8 +82,18 @@ class MainController(BaseController):
 
     def handle_login(self):
         email, password = self.login_view.display()
-        self.user = AuthService.login(email, password, self.db)
-        print_success("Login successful!")
+        try:
+            self.user = AuthService.login(email, password, self.db)
+            self.auth_error_count = 0
+            AuthTokensService.clear_lockout()
+            print_success("Login successful!")
+        except CustomAuthenticationError as error:
+            self.auth_error_count += 1
+            if self.auth_error_count >= 3:
+                print_error("Too many failed login attempts. Please try again later.")
+                AuthTokensService.save_lockout(duration_seconds=30)
+                self.exit_app()
+            print_error(error.message + f", remaining attemp(s): {3 - self.auth_error_count}")
 
     def handle_register(self):
         raw = self.user_view.prompt_register()
@@ -82,8 +104,8 @@ class MainController(BaseController):
             print_success("A MANAGER will assign your role. You can now log in.")
         except ValidationError as error:
             print_validation_errors(error)
-        except ValueError as error:
-            print_error(str(error))
+        except CustomUserError as error:
+            print_error(error.message)
 
     def handle_customers_menu(self):
         controller = CustomerController(self.db, self.user)
@@ -98,11 +120,17 @@ class MainController(BaseController):
         controller.handle_contracts_menu()
 
     def handle_events_menu(self):
-        pass
+        controller = EventController(self.db, self.user)
+        controller.handle_events_menu()
 
     def handle_users_menu(self):
         controller = UserController(self.db, self.user)
         controller.handle_users_menu()
+
+    def handle_logout(self):
+        AuthService.logout()
+        self.user = None
+        self.handle_main_menu()
 
     @staticmethod
     def exit_app() -> None:

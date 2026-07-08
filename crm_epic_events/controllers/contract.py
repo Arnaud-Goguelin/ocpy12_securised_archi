@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
-from crm_epic_events.errors import UserIsNotOwnerError, UserNotAllowedError
-from crm_epic_events.permissions import require_roles
-from crm_epic_events.services import ContractService
+from crm_epic_events.errors import UserIsNotOwnerError
+from crm_epic_events.permissions import Permissions, Roles, require_roles
+from crm_epic_events.services import ContractService, CustomerService, UserService
 from crm_epic_events.services.contract.schemas import ContractCreateInput, ContractUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import ContractView, MainMenuView
 
@@ -25,13 +25,16 @@ class ContractController(BaseController):
         self.user = user
         self.view = ContractView()
         self.menu_items = [
-            MenuItem("1", "List all contracts", self.handle_list),
-            MenuItem("2", "List unsigned contracts", self.handle_list_unsigned, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("3", "List unpaid contracts", self.handle_list_unpaid, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("4", "List my contracts", self.handle_list_mine, [Roles.SALES]),
-            MenuItem("5", "Create a contract", self.handle_create, [Roles.MANAGER]),
-            MenuItem("6", "Update a contract", self.handle_update, [Roles.MANAGER, Roles.SALES]),
-            MenuItem("7", "Delete a contract", self.handle_delete, [Roles.MANAGER]),
+            MenuItem(
+                "1",
+                "List my contracts" if self.user.role == Roles.SALES else "List all contracts",
+                self.handle_list,
+            ),
+            MenuItem("2", "List unsigned contracts", self.handle_list_unsigned),
+            MenuItem("3", "List unpaid contracts", self.handle_list_unpaid),
+            MenuItem("4", "Create a contract", self.handle_create, [*Permissions.CONTRACT_CREATE]),
+            MenuItem("5", "Update a contract", self.handle_update, [*Permissions.CONTRACT_UPDATE]),
+            MenuItem("6", "Delete a contract", self.handle_delete, [*Permissions.CONTRACT_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 
@@ -62,59 +65,62 @@ class ContractController(BaseController):
         self.view.display_contracts(contracts, title="Unpaid contracts")
         return NavSignal.STAY
 
-    @require_roles(Roles.SALES)
-    def handle_list_mine(self) -> NavSignal:
-        contracts = ContractService.get_all_by_salesperson(self.user, self.db)
-        self.view.display_contracts(contracts, title="My contracts")
-        return NavSignal.STAY
-
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.CONTRACT_CREATE)
     def handle_create(self) -> NavSignal:
-        from crm_epic_events.services import CustomerService
-
         customers = CustomerService.get_all(self.db)
+        salespersons = UserService.get_all_by_role(Roles.SALES, self.db)
+
         if not customers:
             print_error("No customers found. Please create a customer first.")
             return NavSignal.STAY
 
+        raw_customer, raw_salesperson, raw_data = self.view.prompt_create(customers, salespersons)
+
         try:
-            raw = self.view.prompt_create(customers)
-            data = ContractCreateInput(**raw)
-            contract = ContractService.create(self.user, data, self.db)
+            customer = customers[int(raw_customer) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw_customer}'")
+            return NavSignal.STAY
+
+        try:
+            salesperson = salespersons[int(raw_salesperson) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw_salesperson}'")
+            return NavSignal.STAY
+
+        try:
+            data = ContractCreateInput(customer_id=customer.id, salesperson_id=salesperson.id, **raw_data)
+            contract = ContractService.create(customer, data, self.db)
             print_success(f"Contract '{contract.id}' created successfully.")
         except ValidationError as error:
             print_validation_errors(error)
-        except (UserNotAllowedError, ValueError) as error:
-            print_error(str(error) if isinstance(error, ValueError) else error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER, Roles.SALES)
+    @require_roles(*Permissions.CONTRACT_UPDATE)
     def handle_update(self) -> NavSignal:
-        # SALES can only update contracts linked to their own customers
         contracts = (
             ContractService.get_all(self.db)
             if self.user.role == Roles.MANAGER
             else ContractService.get_all_by_salesperson(self.user, self.db)
         )
-
-        try:
-            target = self.view.prompt_select_contract(contracts)
-        except ValueError as error:
-            print_error(str(error))
+        raw = self.view.prompt_select_contract(contracts)
+        if raw == StandardInputs.CANCELLED:
             return NavSignal.STAY
-
-        if target is None:
+        try:
+            target = contracts[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         self.check_ownership(target.salesperson)
 
-        raw = self.view.prompt_update(target)
-        if not raw:
+        raw_update = self.view.prompt_update(target)
+        if not raw_update:
             print_success("Nothing to update.")
             return NavSignal.STAY
 
         try:
-            data = ContractUpdateInput(**raw)
+            data = ContractUpdateInput(**raw_update)
             ContractService.update(target, data, self.db)
             print_success("Contract updated successfully.")
         except ValidationError as error:
@@ -123,24 +129,20 @@ class ContractController(BaseController):
             print_error(error.message)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.CONTRACT_DELETE)
     def handle_delete(self) -> NavSignal:
         contracts = ContractService.get_all(self.db)
-
+        raw = self.view.prompt_select_contract(contracts)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_contract(contracts)
-        except ValueError as error:
-            print_error(str(error))
+            target = contracts[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
-        if target is None:
-            return NavSignal.STAY
-
-        try:
-            ContractService.delete(target, self.db)
-            print_success(f"Contract '{target.id}' deleted.")
-        except UserNotAllowedError as error:
-            print_error(error.message)
+        ContractService.delete(target, self.db)
+        print_success(f"Contract '{target.id}' deleted.")
         return NavSignal.STAY
 
     @staticmethod

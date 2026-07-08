@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from crm_epic_events.controllers.base import BaseController
-from crm_epic_events.permissions import require_roles
+from crm_epic_events.permissions import Permissions, Roles, require_roles
 from crm_epic_events.services import UserAssignRoleInput, UserService, UserUpdateInput
 from crm_epic_events.utils import check_choice
-from crm_epic_events.utils.constants import MenuItem, NavSignal, Roles, StandardInputs
+from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
 from crm_epic_events.utils.printers import print_error, print_success, print_validation_errors
 from crm_epic_events.views import UserView
 
@@ -25,9 +25,9 @@ class UserController(BaseController):
         self.menu_items = [
             MenuItem("1", "List users", self.handle_list),
             MenuItem("2", "Update my profile", self.handle_update_profile_self),
-            MenuItem("3", "Update a user", self.handle_update_profile_other, [Roles.MANAGER]),
-            MenuItem("4", "Assign role", self.handle_assign_role, [Roles.MANAGER]),
-            MenuItem("5", "Delete a user", self.handle_delete, [Roles.MANAGER]),
+            MenuItem("3", "Update a user", self.handle_update_profile_other, [*Permissions.USER_UPDATE]),
+            MenuItem("4", "Assign role", self.handle_assign_role, [*Permissions.USER_ASSIGN_ROLE]),
+            MenuItem("5", "Delete a user", self.handle_delete, [*Permissions.USER_DELETE]),
             MenuItem(StandardInputs.CANCELLED, "Back to main menu", self.handle_back),
         ]
 
@@ -46,16 +46,17 @@ class UserController(BaseController):
     # --- Handlers ---
 
     def handle_list(self) -> NavSignal:
-        try:
-            role_filter = self.view.display_role_filter_menu()
-        except ValueError as error:
-            print_error(str(error))
-            return NavSignal.STAY
-
-        if role_filter is None:
+        raw = self.view.display_role_filter_menu()
+        if raw == "0":
             users = UserService.get_all(self.db)
             title = "All users"
         else:
+            roles = list(Roles)
+            try:
+                role_filter = roles[int(raw) - 1]
+            except (ValueError, IndexError):
+                print_error(f"Invalid filter: '{raw}'")
+                return NavSignal.STAY
             users = UserService.get_all_by_role(role_filter, self.db)
             title = f"Users — {role_filter.value.capitalize()}"
 
@@ -78,14 +79,17 @@ class UserController(BaseController):
             print_validation_errors(error)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.USER_UPDATE)
     def handle_update_profile_other(self) -> NavSignal:
         users = UserService.get_all(self.db)
         users.remove(self.user)
+        raw = self.view.prompt_select_user(users)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_user(users)
-        except ValueError as error:
-            print_error(str(error))
+            target = users[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:
@@ -103,36 +107,45 @@ class UserController(BaseController):
             print_validation_errors(error)
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.USER_ASSIGN_ROLE)
     def handle_assign_role(self) -> NavSignal:
         users = UserService.get_all(self.db)
+        raw = self.view.prompt_select_user(users)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_user(users)
-        except ValueError as error:
-            print_error(str(error))
+            target = users[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
-        if target is None:
+        raw_role = self.view.prompt_assign_role(target)
+        roles = list(Roles)
+        try:
+            role = roles[int(raw_role) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid role choice: '{raw_role}'")
             return NavSignal.STAY
 
         try:
-            role = self.view.prompt_assign_role(target)
             data = UserAssignRoleInput(role=role)
-            UserService.assign_role(self.user, target, data, self.db)
+            UserService.assign_role(target, data, self.db)
             print_success(f"Role '{role}' assigned to {target.first_name} {target.last_name}.")
         except ValidationError as error:
             print_validation_errors(error)
-        except ValueError as error:
-            print_error(str(error))
         return NavSignal.STAY
 
-    @require_roles(Roles.MANAGER)
+    @require_roles(*Permissions.USER_DELETE)
     def handle_delete(self) -> NavSignal:
         users = UserService.get_all(self.db)
+        users.remove(self.user)
+        raw = self.view.prompt_select_user(users)
+        if raw == StandardInputs.CANCELLED:
+            return NavSignal.STAY
         try:
-            target = self.view.prompt_select_user(users)
-        except ValueError as error:
-            print_error(str(error))
+            target = users[int(raw) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw}'")
             return NavSignal.STAY
 
         if target is None:

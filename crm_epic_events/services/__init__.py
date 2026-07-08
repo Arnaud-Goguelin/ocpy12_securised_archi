@@ -7,3 +7,4 @@ from .company.service import CompanyService
 from .contract.schemas import ContractCreateInput, ContractUpdateInput
 from .contract.service import ContractService
 from .event.service import EventService
+from .event.schemas import EventCreateInput

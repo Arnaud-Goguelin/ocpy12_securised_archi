@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from crm_epic_events.models.database import Base
 from crm_epic_events.services.customer.schemas import CustomerUpdateInput
-from crm_epic_events.utils import db_transaction
 
 
 if TYPE_CHECKING:
@@ -53,8 +52,8 @@ class Customer(Base):
     :type phone: str
     :ivar created_at: Timestamp of when the Customer was created.
     :type created_at: datetime with timezone
-    :ivar last_updated_at: Timestamp of when the Customer was last updated.
-    :type last_updated_at: datetime with timezone
+    :ivar last_last_updated_at: Timestamp of when the Customer was last updated.
+    :type last_last_updated_at: datetime with timezone
     """
 
     __tablename__ = "customers"
@@ -168,11 +167,5 @@ class Customer(Base):
         return self
 
     def delete(self, db: "Session") -> None:
-        company_vat = self.company_vat
-        with db_transaction(db, "Deleting customer"):
-            db.delete(self)
-            remaining = Customer.get_all_by_company_vat(company_vat, db)
-            if not remaining:
-                company = Company.get_by_vat(company_vat, db)
-                if company:
-                    db.delete(company)
+        db.delete(self)
+        db.flush()

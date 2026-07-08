@@ -1,16 +1,12 @@
 import uuid
 
-from typing import TYPE_CHECKING
-
 from sqlalchemy import String, select
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
+from crm_epic_events.models.customer import Customer
 from crm_epic_events.models.database import Base
 from crm_epic_events.services.company.schemas import CompanyUpdateInput
 
-
-if TYPE_CHECKING:
-    from crm_epic_events.models.customer import Customer
 
 logger = __import__("logging").getLogger(__name__)
 
@@ -81,3 +77,9 @@ class Company(Base):
     def delete(self, db: Session) -> None:
         db.delete(self)
         db.flush()
+
+    @classmethod
+    def delete_by_vat(cls, vat_number: str, db: Session) -> None:
+        company = cls.get_by_vat(vat_number, db)
+        if company:
+            db.delete(company)
