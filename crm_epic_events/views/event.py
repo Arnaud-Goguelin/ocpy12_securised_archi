@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class EventView:
+    """Handles all CLI prompts and display output for events operations."""
+
     # --- Prompts ---
 
     @staticmethod

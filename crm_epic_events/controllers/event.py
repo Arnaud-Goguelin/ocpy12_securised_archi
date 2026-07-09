@@ -24,6 +24,8 @@ if TYPE_CHECKING:
 
 
 class EventController(BaseController):
+    """Handles navigation and user interactions for event management."""
+
     def __init__(self, db: "Session", user: "User | None"):
         self.db = db
         self.user = user
@@ -38,6 +40,8 @@ class EventController(BaseController):
         ]
 
     def handle_events_menu(self) -> NavSignal:
+        """Runs the event sub-menu loop, dispatching to the selected action until the user navigates back."""
+
         while True:
             choice = MainMenuView.display(self.visible_menu_items)
             item = check_choice(choice, self.visible_menu_items)
@@ -61,6 +65,17 @@ class EventController(BaseController):
 
     @require_roles(*Permissions.EVENT_CREATE)
     def handle_create(self) -> NavSignal:
+        """
+        Lets a SALES user select one of their signed contracts and create an associated event.
+
+        The customer is automatically inherited from the selected contract.
+
+        Raises:
+            ValidationError: If the input does not pass Pydantic validation (e.g. end_date before start_date).
+            ContractNotFoundError: If the selected contract no longer exists at creation time.
+            ContractNotSignedError: If the selected contract is not signed.
+        """
+
         # Only signed contracts owned by the current salesperson
         all_contracts = ContractService.get_all_by_salesperson(self.user, self.db)
         signed_contracts = [contract for contract in all_contracts if contract.status]
@@ -91,6 +106,17 @@ class EventController(BaseController):
 
     @require_roles(*Permissions.EVENT_UPDATE)
     def handle_update(self) -> NavSignal:
+        """
+        Lets the current user select and update an event.
+
+        Managers see all events; support users only see events assigned to them.
+        Ownership is enforced before the update is applied.
+
+        Raises:
+            ValidationError: If the updated input does not pass Pydantic validation.
+            UserIsNotOwnerError: If the current user is not the assigned support of the target event.
+        """
+
         # Filter events by support user if not manager, to enforce ownership
         events = (
             EventService.get_all(self.db)
@@ -125,6 +151,9 @@ class EventController(BaseController):
 
     @require_roles(*Permissions.EVENT_DELETE)
     def handle_delete(self) -> NavSignal:
+        """
+        Lets a MANAGER select and delete an event. Restricted to MANAGER only.
+        """
         events = EventService.get_all(self.db)
         raw = self.view.prompt_select_event(events)
         if raw == StandardInputs.CANCELLED:
