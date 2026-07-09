@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class CustomerService:
+    """Handles business logic for customer lifecycle management."""
+
     @staticmethod
     def get_all(db: "Session") -> list["Customer"]:
         return Customer.get_all(db)
@@ -24,8 +26,10 @@ class CustomerService:
     @staticmethod
     def create(current_user: "User", data: "CustomerCreateInput", db: "Session") -> "Customer":
         """
-        Only SALES members can create a customer.
-        The customer is automatically assigned to the creating salesperson.
+        Creates a new customer assigned to the authenticated salesperson.
+
+        Auto-creates the company from `data.company_name` if no company matches `data.vat_number`.
+        Both the optional company creation and customer creation run in the same transaction.
         """
 
         # Auto-create company if not found — stays in the same transaction
@@ -55,6 +59,9 @@ class CustomerService:
 
     @staticmethod
     def delete(target_customer: "Customer", db: "Session") -> None:
+        """
+        Deletes the given customer and cascades company deletion if no customers remain linked to it.
+        """
         company_vat = target_customer.company_vat
         current_company = target_customer.company
         with db_transaction(db, "Deleting customer"):

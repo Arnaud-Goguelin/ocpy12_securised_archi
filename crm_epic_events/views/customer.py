@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class CustomerView:
+    """Handles all CLI prompts and display output for customer operations."""
+
     # --- Prompts ---
 
     @staticmethod

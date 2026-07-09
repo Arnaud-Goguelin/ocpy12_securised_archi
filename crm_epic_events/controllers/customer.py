@@ -20,6 +20,11 @@ if TYPE_CHECKING:
 
 
 class CustomerController(BaseController):
+    """
+    Handles navigation and user interactions for customer management.
+    Permissions are managed in the controller.
+    """
+
     def __init__(self, db: "Session", user: "User | None"):
         self.db = db
         self.user = user
@@ -37,6 +42,8 @@ class CustomerController(BaseController):
         ]
 
     def handle_customers_menu(self) -> NavSignal:
+        """Runs the customer sub-menu loop,
+        dispatching to the selected action until the user navigates back."""
         while True:
             choice = MainMenuView.display(self.visible_menu_items)
             item = check_choice(choice, self.visible_menu_items)
@@ -55,6 +62,13 @@ class CustomerController(BaseController):
 
     @require_roles(*Permissions.CUSTOMER_CREATE)
     def handle_create(self) -> NavSignal:
+        """
+        Prompts for customer details and creates a new customer assigned to the current user.
+
+        Raises:
+            ValidationError: If the input does not pass Pydantic validation.
+            UserNotAllowedError: If the current user's role is not permitted to create a customer.
+        """
         raw = self.view.prompt_create()
         try:
             data = CustomerCreateInput(salesperson_id=self.user.id, **raw)
@@ -68,6 +82,16 @@ class CustomerController(BaseController):
 
     @require_roles(*Permissions.CUSTOMER_UPDATE)
     def handle_update(self) -> NavSignal:
+        """
+        Lets the current user select and update one of the eligible customers.
+
+        Managers see all customers; salespersons only see their own.
+        Ownership is enforced before the update is applied.
+
+        Raises:
+            ValidationError: If the updated input does not pass Pydantic validation.
+            UserIsNotOwnerError: If the current user is not the assigned salesperson of the target customer.
+        """
 
         # improve app perf by filtering result by salesperson if user is not manager
         # and also allow self.user to update its own customers only if it is not manager
@@ -111,6 +135,12 @@ class CustomerController(BaseController):
 
     @require_roles(*Permissions.CUSTOMER_DELETE)
     def handle_delete(self) -> NavSignal:
+        """
+        Lets the current user select and delete a customer. Restricted to managers only.
+
+        Raises:
+            UserNotAllowedError: If the current user's role is not permitted to delete a customer.
+        """
         customers = CustomerService.get_all(self.db)
         raw = self.view.prompt_select_customer(customers)
         if raw == StandardInputs.CANCELLED:

@@ -22,38 +22,14 @@ logger = __import__("logging").getLogger(__name__)
 
 class Customer(Base):
     """
-    Represents a Customer entity with relationships and specific attributes.
-    This is just the model to register a user in DB.
-    All business logic related to a Customer is handled in the service layer.
+    Represents a customer belonging to a company and assigned to a salesperson.
 
-    :ivar id: Unique identifier for the Customer.
-    :type id: uuid.UUID
-    :ivar salesperson_id: Identifier of the User associated as salesperson to the Customer [FK - many-to-one].
-    :type salesperson_id: uuid.UUID
-    :ivar salesperson: References the User who is the salesperson for the Customer.
-    :type salesperson: User
-    :ivar company_vat: VAT number of the Company associated with the Customer.
-    :type company_vat: str
-    :ivar company: References the Company associated with the Customer.
-    :type company: Company
-    :ivar contracts: List of contracts associated with the Customer [FK - one-to-many].
-    :type contracts: list[Contract]
-    :ivar events: List of events associated with the Customer [FK - one-to-many].
-    :type events: list[Event]
-    :ivar email: Email address of the Customer.
-    :type email: str
-    :ivar password: Password for the Customer's account.
-    :type password: str
-    :ivar first_name: First name of the Customer.
-    :type first_name: str
-    :ivar last_name: Last name of the Customer.
-    :type last_name: str
-    :ivar phone: Phone number of the Customer.
-    :type phone: str
-    :ivar created_at: Timestamp of when the Customer was created.
-    :type created_at: datetime with timezone
-    :ivar last_last_updated_at: Timestamp of when the Customer was last updated.
-    :type last_last_updated_at: datetime with timezone
+    Each customer is linked to exactly one `Company` (via `company_vat`) and one `User` salesperson
+    (via `salesperson_id`).
+    Deleting either the company or the salesperson is restricted as long as
+    customers remain linked to them (``ondelete="RESTRICT"``).
+    A customer may have multiple `Contract` and `Event` records.
+    Company deletion is cascaded at the service layer when the last customer of a company is removed.
     """
 
     __tablename__ = "customers"
