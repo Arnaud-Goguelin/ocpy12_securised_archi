@@ -5,7 +5,7 @@ from .constants import GenericMessages
 
 def countdown(message: GenericMessages, timer: int = 3):
     """
-    Counts down from 3 to 0, displaying a message before each number.
+    Counts down from timer (3 by default) to 0, displaying a message before each number.
     """
     for i in range(timer, -1, -1):
         print(f"\r{message.value}{i}", end="", flush=True)

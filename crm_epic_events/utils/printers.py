@@ -35,7 +35,7 @@ def print_error(text: str) -> None:
 
 
 def print_validation_errors(validation_error: "ValidationError") -> None:
-    """Prints only the human-readable messages from a Pydantic ValidationError."""
+    """Prints only the readable from a Pydantic ValidationError."""
     for error in validation_error.errors():
         field = error["loc"][0] if error["loc"] else "input"
         message = error["msg"].replace("Value error, ", "")

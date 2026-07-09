@@ -35,4 +35,5 @@ def db_transaction(db: "Session", operation: str = "database operation"):
         raise
     except Exception:
         db.rollback()
+        # unexpected error are logged in main.py
         raise
