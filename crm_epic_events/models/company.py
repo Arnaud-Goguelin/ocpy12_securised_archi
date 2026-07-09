@@ -13,16 +13,13 @@ logger = __import__("logging").getLogger(__name__)
 
 class Company(Base):
     """
-    Represents a company entity in the data model.
-    This is just the model to register a user in DB.
-    All business logic related to a Company is handled in the service layer.
+    Represents a client company identified uniquely by its VAT number.
 
-    :ivar vat_number: The unique VAT number identifying the company [PK].
-    :type vat_number: str
-    :ivar customers: A list of customers linked to the company [FK - one-to-many].
-    :type customers: list[Customer]
-    :ivar name: The name of the company.
-    :type name: str
+    The VAT number serves as the primary key and is immutable after creation.
+    A company may be linked to multiple `Customer` records.
+    Deletion is restricted at the database level while customers remain linked;
+    it is cascaded at the service layer when the last customer of the company is removed.
+    Companies can also be created implicitly during customer creation if no match is found by VAT number.
     """
 
     __tablename__ = "companies"

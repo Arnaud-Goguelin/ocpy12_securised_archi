@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 
 
 class CompanyService:
+    """
+    Handles business logic for company lifecycle management.
+    Permissions are managed in the controller.
+    """
+
     @staticmethod
     def get_all(db: "Session") -> list["Company"]:
         return Company.get_all(db)
@@ -28,6 +33,15 @@ class CompanyService:
 
     @staticmethod
     def create(data: "CompanyCreateInput | CustomerCreateInput", db: "Session") -> "Company":
+        """
+        Creates a new company from either a direct creation input or a customer creation input.
+
+        When called from ``CustomerService.create()``, uses ``data.company_name`` as the company name.
+
+        Raises:
+            CompanyAlreadyExistsError: If a company with the same VAT number already exists.
+        """
+
         existing = Company.get_by_vat(data.vat_number, db)
         if existing:
             raise CompanyAlreadyExistsError()

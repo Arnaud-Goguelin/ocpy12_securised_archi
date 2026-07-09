@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 
 class CompanyController(BaseController):
+    """Handles navigation and user interactions for company management."""
+
     def __init__(self, db: "Session", user: "User | None"):
         self.db = db
         self.user = user
@@ -33,6 +35,8 @@ class CompanyController(BaseController):
         ]
 
     def handle_companies_menu(self) -> NavSignal:
+        """Runs the company sub-menu loop, dispatching to the selected action until the user navigates back."""
+
         while True:
             from crm_epic_events.views.main import MainMenuView  # avoid circular import
 
@@ -53,6 +57,15 @@ class CompanyController(BaseController):
 
     @require_roles(*Permissions.COMPANY_CREATE)
     def handle_create(self) -> NavSignal:
+        """
+        Prompts for company details and creates a new company.
+
+        Raises:
+            ValidationError: If the input does not pass Pydantic validation.
+            UserNotAllowedError: If the current user's role is not permitted to create a company.
+            CompanyAlreadyExistsError: If a company with the same VAT number already exists.
+        """
+
         raw = self.view.prompt_create()
         try:
             data = CompanyCreateInput(**raw)
@@ -66,6 +79,15 @@ class CompanyController(BaseController):
 
     @require_roles(*Permissions.COMPANY_UPDATE)
     def handle_update(self) -> NavSignal:
+        """
+        Lets the current user select and update a company.
+
+        Managers see all companies; salespersons only see companies linked to their own customers.
+
+        Raises:
+            ValidationError: If the updated input does not pass Pydantic validation.
+            UserNotAllowedError: If the current user's role is not permitted to update a company.
+        """
 
         # improve app perf by filtering result by salesperson if user is not manager
         # and also allow self.user to update its own companies only if it is not manager
@@ -104,6 +126,13 @@ class CompanyController(BaseController):
 
     @require_roles(*Permissions.COMPANY_DELETE)
     def handle_delete(self) -> NavSignal:
+        """
+        Lets a MANAGER select and delete a company. Restricted to MANAGER only.
+
+        Raises:
+            UserNotAllowedError: If the current user's role is not permitted to delete a company.
+        """
+
         companies = CompanyService.get_all(self.db)
         raw = self.view.prompt_select_company(companies)
         if raw == StandardInputs.CANCELLED:
