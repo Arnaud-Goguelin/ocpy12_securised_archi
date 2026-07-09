@@ -14,9 +14,10 @@ class Permissions(list[Roles], Enum):
     system actions.
 
     Here is the architecture logic:
-    Member: action on an object = Value: list of roles allowed to perform the action
+        Member: action on an object
+        Value: list of roles allowed to perform the action
 
-    Ownership checks is NOT included in the permissions.
+    Ownership checks are NOT included in the permissions.
     """
 
     # Reminder from specifications: all roles can read all objects
