@@ -6,6 +6,8 @@ def check_choice(
     choice: str,
     menu_items: list[MenuItem],
 ):
+    """Check if the given choice is included in the menu items given by the controller
+    and return the corresponding menu item."""
     item = next((menu_item for menu_item in menu_items if menu_item.key == choice), None)
     if not item:
         print_error(f"Invalid choice: {choice}")

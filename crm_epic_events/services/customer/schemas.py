@@ -1,7 +1,5 @@
 import uuid
 
-from datetime import datetime
-
 from pydantic import BaseModel, EmailStr
 
 
@@ -9,6 +7,14 @@ from pydantic import BaseModel, EmailStr
 
 
 class CustomerCreateInput(BaseModel):
+    """
+    Input schema for creating a new customer.
+
+    Automatically assigns the salesperson from the authenticated user.
+    If no company matches the given VAT number, one is created using `company_name`.
+    Used in: ``CustomerService.create()``.
+    """
+
     salesperson_id: uuid.UUID
     vat_number: str
     company_name: str | None = None  # used for auto-creation if company not found
@@ -19,24 +25,15 @@ class CustomerCreateInput(BaseModel):
 
 
 class CustomerUpdateInput(BaseModel):
+    """
+    Input schema for partially updating an existing customer.
+
+    All fields are optional; only provided fields are applied.
+    Used in: ``CustomerService.update()``.
+    """
+
     first_name: str | None = None
     last_name: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
     company_name: str | None = None
-
-
-# --- Output schema ---
-
-
-class CustomerResponse(BaseModel):
-    id: uuid.UUID
-    first_name: str
-    last_name: str
-    email: str
-    phone: str
-    company_name: str
-    created_at: datetime
-    last_updated_at: datetime
-
-    model_config = {"from_attributes": True}

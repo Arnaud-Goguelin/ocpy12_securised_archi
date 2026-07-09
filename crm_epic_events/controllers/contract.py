@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 
 class ContractController(BaseController):
+    """Handles navigation and user interactions for contract management."""
+
     def __init__(self, db: "Session", user: "User | None"):
         self.db = db
         self.user = user
@@ -39,6 +41,8 @@ class ContractController(BaseController):
         ]
 
     def handle_contracts_menu(self) -> NavSignal:
+        """Runs the contract sub-menu loop, dispatching to the selected action until the user navigates back."""
+
         while True:
             choice = MainMenuView.display(self.visible_menu_items)
             item = check_choice(choice, self.visible_menu_items)
@@ -67,6 +71,15 @@ class ContractController(BaseController):
 
     @require_roles(*Permissions.CONTRACT_CREATE)
     def handle_create(self) -> NavSignal:
+        """
+        Prompts for a customer and financial details, then creates a new contract. Restricted to MANAGER only.
+
+        The salesperson is automatically inherited from the selected customer.
+
+        Raises:
+            ValidationError: If the input does not pass Pydantic validation (e.g. remaining > total).
+        """
+
         customers = CustomerService.get_all(self.db)
         salespersons = UserService.get_all_by_role(Roles.SALES, self.db)
 
@@ -98,6 +111,17 @@ class ContractController(BaseController):
 
     @require_roles(*Permissions.CONTRACT_UPDATE)
     def handle_update(self) -> NavSignal:
+        """
+        Lets the current user select and update a contract.
+
+        Managers see all contracts; salespersons only see their own.
+        Ownership is enforced before the update is applied.
+
+        Raises:
+            ValidationError: If the updated input does not pass Pydantic validation.
+            UserIsNotOwnerError: If the current user is not the assigned salesperson of the target contract.
+        """
+
         contracts = (
             ContractService.get_all(self.db)
             if self.user.role == Roles.MANAGER
@@ -131,6 +155,9 @@ class ContractController(BaseController):
 
     @require_roles(*Permissions.CONTRACT_DELETE)
     def handle_delete(self) -> NavSignal:
+        """
+        Lets a MANAGER select and delete a contract. Restricted to MANAGER only.
+        """
         contracts = ContractService.get_all(self.db)
         raw = self.view.prompt_select_contract(contracts)
         if raw == StandardInputs.CANCELLED:

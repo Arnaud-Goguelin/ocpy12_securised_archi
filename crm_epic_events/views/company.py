@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class CompanyView:
+    """Handles all CLI prompts and display output for company operations."""
+
     # --- Prompts ---
 
     @staticmethod

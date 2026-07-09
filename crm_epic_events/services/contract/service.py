@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class ContractService:
+    """Handles business logic for contract lifecycle management."""
+
     @staticmethod
     def get_all(db: "Session") -> list["Contract"]:
         return Contract.get_all(db)
@@ -38,7 +40,12 @@ class ContractService:
         data: "ContractCreateInput",
         db: "Session",
     ) -> "Contract":
-        """Only MANAGER can create contracts. Salesperson is inherited from the customer."""
+        """
+        Creates a new contract linked to the given customer. Restricted to MANAGER only.
+
+        The salesperson is automatically inherited from the customer, not taken from `data`.
+        """
+
         with db_transaction(db, "Creating contract"):
             return Contract.create(
                 customer_id=customer.id,

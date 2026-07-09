@@ -61,6 +61,13 @@ class MainController(BaseController):
         self.auth_error_count = 0
 
     def handle_main_menu(self):
+        """
+        Runs the top-level menu loop, switching between the guest menu and the authenticated menu.
+
+        If a lockout is active, displays a countdown before allowing further login attempts.
+        Dispatches each choice to the corresponding handler without breaking the loop on return.
+        """
+
         while True:
             if not self.user:
                 remaining = AuthTokensService.get_lockout_remaining()
@@ -81,6 +88,16 @@ class MainController(BaseController):
                 item.action()
 
     def handle_login(self):
+        """
+        Prompts for credentials and authenticates the user.
+
+        Tracks failed attempts and triggers a 30-second lockout after 3 consecutive failures,
+        then exits the application.
+
+        Raises:
+            CustomAuthenticationError: Caught internally; error message and remaining attempts are displayed.
+        """
+
         email, password = self.login_view.display()
         try:
             self.user = AuthService.login(email, password, self.db)
@@ -96,6 +113,16 @@ class MainController(BaseController):
             print_error(error.message + f", remaining attemp(s): {3 - self.auth_error_count}")
 
     def handle_register(self):
+        """
+        Prompts for registration details and creates a new user account with a default SALES role.
+
+        Informs the user that a MANAGER must assign their actual role before they can access the system.
+
+        Raises:
+            ValidationError: Caught internally; field errors are displayed.
+            CustomUserError: Caught internally; error message is displayed.
+        """
+
         raw = self.user_view.prompt_register()
         try:
             data = UserRegisterInput(**raw)

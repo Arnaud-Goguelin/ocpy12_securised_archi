@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 
 class EventService:
+    """Handles business logic for event lifecycle management."""
+
     @staticmethod
     def get_all(db: "Session") -> list["Event"]:
         return Event.get_all(db)
@@ -36,8 +38,13 @@ class EventService:
     @staticmethod
     def create(data: "EventCreateInput", db: "Session") -> "Event":
         """
-        Only SALES members can create an event, for a customer they own
-        with a signed contract. Permission checks are done in the controller.
+        Creates a new event linked to a signed contract. Restricted to SALES only.
+
+        Ownership and permission checks are delegated to the controller.
+
+        Raises:
+            ContractNotFoundError: If no contract matches `data.contract_id`.
+            ContractNotSignedError: If the linked contract has not been signed yet.
         """
 
         contract = Contract.get_by_id(data.contract_id, db)

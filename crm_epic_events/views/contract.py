@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class ContractView:
+    """Handles all CLI prompts and display output for contracts operations."""
+
     # --- Prompts ---
 
     @staticmethod

@@ -7,6 +7,12 @@ from crm_epic_events.permissions import Roles
 
 
 class TokenBase(BaseModel):
+    """
+    Base schema for JWT token payloads, shared by access and refresh tokens.
+
+    Serializes `exp` as a Unix timestamp and `id` as a string, as required by PyJWT.
+    """
+
     id: UUID
     exp: datetime
 
@@ -21,6 +27,13 @@ class TokenBase(BaseModel):
 
 
 class AccessTokenPayload(TokenBase):
+    """
+    JWT access token payload carrying the authenticated user's identity and role.
+
+    Short-lived; used to identify the current user on each request.
+    Used in: ``AuthTokensService.generate_access_token()``.
+    """
+
     email: str
     role: Roles
 
@@ -28,4 +41,11 @@ class AccessTokenPayload(TokenBase):
 
 
 class RefreshTokenPayload(TokenBase):
+    """
+    JWT refresh token payload carrying only the user's ID.
+
+    Long-lived; used to silently reissue an expired access token.
+    Used in: ``AuthTokensService.generate_refresh_token()``, ``AuthService._refresh()``.
+    """
+
     pass

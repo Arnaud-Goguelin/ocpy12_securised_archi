@@ -15,6 +15,7 @@ def require_roles(*allowed_roles: "Roles") -> Callable:
     Decorator that restricts access to a controller method based on the current user's role.
 
     The decorated method must belong to a class with a `self.user` attribute (User model instance).
+    Usually, the wrapped method is a controller's method in this app.
     If the user's role is not in `allowed_roles`, a custom error UserNotAllowedError is raised.
 
     Usage:

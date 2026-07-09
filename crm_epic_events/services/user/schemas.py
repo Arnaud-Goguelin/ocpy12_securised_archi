@@ -1,5 +1,3 @@
-import uuid
-
 from pydantic import BaseModel, EmailStr, field_validator
 
 from crm_epic_events.errors import PasswordNotSecuredError
@@ -27,6 +25,14 @@ def validate_password(value: str) -> str:
 
 
 class UserRegisterInput(BaseModel):
+    """
+    Input schema for public user registration.
+
+    Password is validated for strength at schema level.
+    Role is not included; it defaults to SALES and must be assigned later by a MANAGER.
+    Used in: ``UserService.register()``.
+    """
+
     first_name: str
     last_name: str
     email: EmailStr
@@ -39,6 +45,14 @@ class UserRegisterInput(BaseModel):
 
 
 class UserUpdateInput(BaseModel):
+    """
+    Input schema for partially updating a user's profile.
+
+    All fields are optional; only provided fields are applied.
+    Password is re-validated for strength if provided. Role can only be changed by a MANAGER.
+    Used in: ``UserService.update_profile()``.
+    """
+
     first_name: str | None = None
     last_name: str | None = None
     email: EmailStr | None = None
@@ -52,17 +66,10 @@ class UserUpdateInput(BaseModel):
 
 
 class UserAssignRoleInput(BaseModel):
+    """
+    Input schema for assigning a role to a user. Restricted to MANAGER only.
+
+    Used in: ``UserService.assign_role()``.
+    """
+
     role: Roles
-
-
-# --- Output schema ---
-
-
-class UserResponse(BaseModel):
-    id: uuid.UUID
-    first_name: str
-    last_name: str
-    email: str
-    role: Roles
-
-    model_config = {"from_attributes": True}

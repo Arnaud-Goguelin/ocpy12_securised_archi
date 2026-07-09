@@ -20,32 +20,13 @@ logger = __import__("logging").getLogger(__name__)
 
 class User(Base):
     """
-    Represents a user from Epic Events Company in the system.
-    This is just the model to register a user in DB.
-    All business logic related to a User is handled in the service layer.
+    Represents an Epic Events employee with an assigned role (SALES, MANAGER, or SUPPORT).
 
-
-    :ivar id: Unique identifier for the user [PK].
-    :type id: uuid.UUID
-    :ivar customers: Relationship defining one-to-many association between User and Customer.
-        A user can have multiple customers [FK - one-to-many].
-    :type customers: list[Customer]
-    :ivar contracts: Relationship defining one-to-many association between User and Contract.
-        A user can be associated with multiple contracts [FK - one-to-many].
-    :type contracts: list[Contract]
-    :ivar events: Relationship defining one-to-many association between User and Event.
-        A user can be responsible for handling multiple events [FK - one-to-many].
-    :type events: list[Event]
-    :ivar email: Email address of the user which should be unique across all users.
-    :type email: str
-    :ivar password: Password for the user used for authentication (should be hashed).
-    :type password: str
-    :ivar role: role assigned to the user within the system.
-    :type role: Roles
-    :ivar first_name: The first name of the user.
-    :type first_name: str
-    :ivar last_name: The last name of the user.
-    :type last_name: str
+    Each user may be linked as a salesperson to multiple `Customer` and `Contract` records,
+    and as support staff to multiple `Event` records.
+    Deleting a user is restricted at the database level as long as any of these records remain linked.
+    Passwords are stored hashed (bcrypt); hashing is handled at the service layer.
+    The default role at creation is SALES; a MANAGER must assign the actual role afterwards.
     """
 
     __tablename__ = "users"

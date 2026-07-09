@@ -21,30 +21,12 @@ logger = __import__("logging").getLogger(__name__)
 
 class Contract(Base):
     """
-    Representation of a Contract entity.
-    This is just the model to register a user in DB.
-    All business logic related to a Contract is handled in the service layer.
+    Represents a commercial contract between a customer and Epic Events.
 
-    :ivar id: The unique identifier for the contract [PK].
-    :type id: uuid.UUID
-    :ivar customer_id: The identifier linking the contract to its associated customer [FK - many-to-one].
-    :type customer_id: uuid.UUID
-    :ivar customer: The customer associated with this contract.
-    :type customer: Customer
-    :ivar salesperson_id: The identifier linking the contract to its assigned salesperson [FK - many-to-one].
-    :type salesperson_id: uuid.UUID
-    :ivar salesperson: The salesperson associated with this contract.
-    :type salesperson: User
-    :ivar event: The event associated with this contract, if any [FK - one-to-one].
-    :type event: Event or None
-    :ivar total_amount: The total monetary value of the contract.
-    :type total_amount: float
-    :ivar remaining_amount: The remaining balance yet to be paid on the contract.
-    :type remaining_amount: float
-    :ivar created_at: The timestamp indicating when the contract was created.
-    :type created_at: datetime
-    :ivar status: The status of the contract, indicating whether it is signed (True) or not (False).
-    :type status: bool
+    Each contract is linked to one `Customer` and inherits the customer's salesperson as its own.
+    A contract may optionally be associated with one `Event` (one-to-one).
+    Deleting a linked customer or salesperson is restricted at the database level as long as contracts remain.
+    Tracks financial state via `total_amount` and `remaining_amount`, and signature state via `status`.
     """
 
     __tablename__ = "contracts"
