@@ -24,6 +24,18 @@ format:
 check: lint format
 
 # ==============================================
+# GIT
+# ==============================================
+
+# Run all the tests with coverage included
+test:
+     just exec pytest .
+
+# Run the tests for a specific file
+test-file *args='':
+    just exec pytest tests/{{args}}
+
+# ==============================================
 # DOCKER
 # ==============================================
 
