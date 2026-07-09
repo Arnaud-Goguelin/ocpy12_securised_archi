@@ -1,3 +1,4 @@
+import logging
 import traceback
 
 from crm_epic_events.config import Config
@@ -7,6 +8,9 @@ from crm_epic_events.models.database import get_db
 from crm_epic_events.models.start_tasks import setup_database
 from crm_epic_events.services.authentication.service import AuthService, AuthTokensService
 from crm_epic_events.utils import GenericMessages, print_error, print_info, print_unexpected_error
+
+
+logger = logging.getLogger(__name__)
 
 
 class Application:
@@ -31,6 +35,7 @@ class Application:
                     self.controller.handle_main_menu()
                     break
                 except Exception as error:
+                    logger.error(f"Unexpected error: {error}")
                     print_unexpected_error(str(error), GenericMessages.MAIN_MENU_RETURN)
                     if Config.APP_ENV == "local":
                         print_info(traceback.format_exc())
