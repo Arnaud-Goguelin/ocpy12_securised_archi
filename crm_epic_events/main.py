@@ -14,6 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class Application:
+    """
+    Entry point of the CRM application.
+    Bootstraps the database, resolves the current user, and runs the main loop.
+
+    Authentication errors at startup are caught here, tokens are cleared, and the app continues as a guest session.
+    The database session is closed only on application exit.
+    """
+
     def __init__(self):
         self.db = get_db()
         # token may be expired of corrupted
@@ -28,6 +36,15 @@ class Application:
         self.controller = MainController(self.db, self.user)
 
     def run(self):
+        """
+        Sets up the database and starts the main menu loop.
+
+        Unexpected errors are caught, logged, and reported to the user without crashing the app;
+        the loop continues to allow the user to keep navigating.
+        In `local` env, the full traceback is printed for debugging purposes.
+        The database session is closed in a `finally` block to ensure cleanup on exit.
+        """
+
         setup_database(self.db)
         try:
             while True:
