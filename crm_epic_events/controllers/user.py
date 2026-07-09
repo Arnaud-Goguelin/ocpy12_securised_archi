@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
 
 class UserController(BaseController):
+    """Handles navigation and user interactions for user management."""
+
     def __init__(self, db: "Session", user: "User | None"):
         self.db = db
         self.user = user
@@ -32,6 +34,8 @@ class UserController(BaseController):
         ]
 
     def handle_users_menu(self) -> NavSignal:
+        """Runs the user sub-menu loop, dispatching to the selected action until the user navigates back."""
+
         while True:
             from crm_epic_events.views.main import MainMenuView  # avoid circular import
 
@@ -46,6 +50,11 @@ class UserController(BaseController):
     # --- Handlers ---
 
     def handle_list(self) -> NavSignal:
+        """
+        Displays the role filter menu and lists users accordingly.
+
+        Managers see user IDs in the output; other roles do not.
+        """
         raw = self.view.display_role_filter_menu()
         if raw == "0":
             users = UserService.get_all(self.db)
@@ -65,6 +74,14 @@ class UserController(BaseController):
         return NavSignal.STAY
 
     def handle_update_profile_self(self) -> NavSignal:
+        """
+        Lets the current user update their own profile.
+
+        Role changes are silently ignored regardless of the user's role.
+
+        Raises:
+            ValidationError: If the updated input does not pass Pydantic validation.
+        """
 
         raw = self.view.prompt_update_profile(self.user)
         if not raw:
@@ -81,6 +98,12 @@ class UserController(BaseController):
 
     @require_roles(*Permissions.USER_UPDATE)
     def handle_update_profile_other(self) -> NavSignal:
+        """
+        Lets a MANAGER select and update another user's profile. The current user is excluded from the list.
+
+        Raises:
+            ValidationError: If the updated input does not pass Pydantic validation.
+        """
         users = UserService.get_all(self.db)
         users.remove(self.user)
         raw = self.view.prompt_select_user(users)
@@ -109,6 +132,12 @@ class UserController(BaseController):
 
     @require_roles(*Permissions.USER_ASSIGN_ROLE)
     def handle_assign_role(self) -> NavSignal:
+        """
+        Lets a MANAGER select a user and assign them a new role. Restricted to MANAGER only.
+
+        Raises:
+            ValidationError: If the role input does not pass Pydantic validation.
+        """
         users = UserService.get_all(self.db)
         raw = self.view.prompt_select_user(users)
         if raw == StandardInputs.CANCELLED:
@@ -137,6 +166,12 @@ class UserController(BaseController):
 
     @require_roles(*Permissions.USER_DELETE)
     def handle_delete(self) -> NavSignal:
+        """
+        Lets a MANAGER select and delete a user. The current user is excluded from the list.
+
+        Raises:
+            ValueError: If the deletion fails unexpectedly.
+        """
         users = UserService.get_all(self.db)
         users.remove(self.user)
         raw = self.view.prompt_select_user(users)

@@ -19,6 +19,11 @@ if TYPE_CHECKING:
 
 
 class UserService:
+    """Handles business logic for user registration,
+    profile management, and role assignment.
+    Permissions are managed in the controller.
+    """
+
     @staticmethod
     def _hash_password(password: str) -> str:
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -36,8 +41,11 @@ class UserService:
     @staticmethod
     def register(data: "UserRegisterInput", db: "Session") -> "User":
         """
-        Public registration — no auth required.
-        Role defaults to SALES, a MANAGER must assign the real role afterwards.
+        Registers a new user with a default SALES role. No authentication required.
+        A MANAGER must assign the actual role after registration.
+
+        Raises:
+            UserAlreadyExistsError: If a user with the same email already exists.
         """
         user = None
         with contextlib.suppress(NoResultFound):
@@ -58,9 +66,11 @@ class UserService:
         db: "Session",
     ) -> "User":
         """
-        A user can update their own profile (not their role).
-        A MANAGER can update any user's profile.
-        Role changes are handled separately via assign_role().
+        Updates a user's profile.
+        Non-managers can only update their own profile, and role changes are ignored.
+
+        Password is hashed before being persisted if provided.
+        Role changes are handled separately via ``assign_role()``.
         """
         if current_user.role != Roles.MANAGER:
             data.role = None

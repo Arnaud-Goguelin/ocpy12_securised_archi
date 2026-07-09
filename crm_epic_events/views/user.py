@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class UserView:
+    """Handles all CLI prompts and display output for user operations."""
+
     # --- Prompts ---
 
     @staticmethod
@@ -24,7 +26,6 @@ class UserView:
 
     @staticmethod
     def prompt_update_profile(target_user: "User") -> dict:
-        """Prompts only the fields the user wants to change. Empty input = keep current value."""
         print_title(f"Update profile — {target_user.first_name} {target_user.last_name}")
         print_info("Leave blank to keep current value.")
         data = {}
@@ -46,7 +47,6 @@ class UserView:
 
     @staticmethod
     def prompt_assign_role(target_user: "User") -> str:
-        """Displays the role list and returns the raw input string."""
         print_title(f"Assign role — {target_user.first_name} {target_user.last_name}")
         print_info(f"Current role: {target_user.role}")
         for i, role in enumerate(Roles, start=1):
@@ -55,7 +55,6 @@ class UserView:
 
     @staticmethod
     def prompt_select_user(users: list["User"]) -> str:
-        """Displays a numbered list and returns the raw input string."""
         for i, user in enumerate(users, start=1):
             print_option(str(i), f"{user.first_name} {user.last_name}  |  {user.email}  |  {user.role}")
         print_option(StandardInputs.CANCELLED, "Cancel")
@@ -77,7 +76,6 @@ class UserView:
 
     @staticmethod
     def display_role_filter_menu() -> str:
-        """Displays the role filter menu and returns the raw input string."""
         print_title("Filter users by role")
         print_option("0", "All")
         for i, role in enumerate(Roles, start=1):
