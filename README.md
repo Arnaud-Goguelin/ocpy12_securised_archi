@@ -11,7 +11,6 @@ It implements a structured data model(customers, companies, contracts, events)
 with role-based access control, JWT authentication, and Sentry integration for error tracking.
 
 
-
 ## Tech Stack
 - **Python 3.12+** 
 - **SQLAlchemy 2.0** as ORM
@@ -19,6 +18,15 @@ with role-based access control, JWT authentication, and Sentry integration for e
 - **Alembic** for database migrations
 - **Sentry** for error monitoring
 - **uv** for dependency management
+
+## 🗄️ Database Schema
+
+The database schema is available as a class diagram:
+
+👉 [View the database schema](docs/class_diagram.drawio)
+
+> The `.drawio` file can be viewed directly on GitHub or opened with [draw.io](https://app.diagrams.net/).
+
 
 ## Running Locally
 Prerequisites
