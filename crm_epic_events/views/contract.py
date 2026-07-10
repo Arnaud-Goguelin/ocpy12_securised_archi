@@ -36,7 +36,7 @@ class ContractView:
         return {
             "total_amount": prompt("Total amount").strip(),
             "remaining_amount": prompt("Remaining amount").strip(),
-            "status": prompt(f"Already signed? ({StandardInputs.VALIDATION}/{StandardInputs.NEGATION})").strip().lower()
+            "status": prompt(f"Already signed? ({StandardInputs.VALIDATION}/{StandardInputs.NEGATION})").strip().upper()
             == StandardInputs.VALIDATION,
         }
 
