@@ -124,6 +124,15 @@ the values in compose.local.yml are pre-configured and ready to use —
 you only need to set the auth and optional Sentry variables.
 
 2. With Docker + just (recommended)
+
+/!\ Be careful, justfile in this project is configured for Windows OS. 
+<br>Comment out the following line to make it work on other OS.
+```
+# Windows shell fix
+set shell := ["cmd", "/c"]
+```
+
+Here are the commands to run the app:
 ```bash
 # Build and start containers (PostgreSQL + app)
 just up
