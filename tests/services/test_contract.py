@@ -91,9 +91,9 @@ class TestCreate:
         assert contract.total_amount == Decimal("1000.00")
         assert contract.remaining_amount == Decimal("500.00")
 
-    def test_inherits_salesperson_from_customer(self, db_session, customer, contract_create_data):
+    def test_salesperson_comes_from_input_data(self, db_session, customer, contract_create_data):
         contract = ContractService.create(customer, contract_create_data, db_session)
-        assert contract.salesperson_id == customer.salesperson_id
+        assert contract.salesperson_id == contract_create_data.salesperson_id
 
     def test_contract_is_persisted(self, db_session, customer, contract_create_data):
         contract = ContractService.create(customer, contract_create_data, db_session)
