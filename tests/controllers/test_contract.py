@@ -48,23 +48,21 @@ class TestHandleCreate:
     def test_manager_can_create(self, mock_db, manager):
         ctrl = ContractController(mock_db, manager)
         customers = CustomerFactory.build_batch(2)
+        salespersons = UserFactory.build_batch(2, role=Roles.SALES)
         contract = ContractFactory()
-        ctrl.view.prompt_create = MagicMock(
-            # remember handle_create in contract controller expects:
-            # raw_customer, raw_salesperson, raw_data as result of self.view.prompt_create
-            return_value=(
-                "1",
-                "1",
-                {
-                    "total_amount": "1000",
-                    "remaining_amount": "500",
-                    "status": False,
-                },
-            )
+        ctrl.view.prompt_select_customer = MagicMock(return_value="1")
+        ctrl.view.prompt_select_salesperson = MagicMock(return_value="1")
+        ctrl.view.prompt_create_details = MagicMock(
+            return_value={
+                "total_amount": "1000",
+                "remaining_amount": "500",
+                "status": False,
+            }
         )
 
         with (
             patch.object(CustomerService, "get_all", return_value=customers),
+            patch("crm_epic_events.controllers.contract.UserService.get_all_by_role", return_value=salespersons),
             patch.object(ContractService, "create", return_value=contract),
         ):
             signal = ctrl.handle_create()
@@ -92,11 +90,13 @@ class TestHandleCreate:
     def test_invalid_customer_selection_returns_stay(self, mock_db, manager):
         ctrl = ContractController(mock_db, manager)
         customers = CustomerFactory.build_batch(2)
-        # remember handle_create in contract controller expects:
-        # raw_customer, raw_salesperson, raw_data as result of self.view.prompt_create
-        ctrl.view.prompt_create = MagicMock(return_value=("invalid", "1", {}))
+        salespersons = UserFactory.build_batch(2, role=Roles.SALES)
+        ctrl.view.prompt_select_customer = MagicMock(return_value="invalid")
 
-        with patch.object(CustomerService, "get_all", return_value=customers):
+        with (
+            patch.object(CustomerService, "get_all", return_value=customers),
+            patch("crm_epic_events.controllers.contract.UserService.get_all_by_role", return_value=salespersons),
+        ):
             signal = ctrl.handle_create()
 
         assert signal == NavSignal.STAY
