@@ -186,11 +186,12 @@ uv run crm
 
 When running in `local` environment, three test users are automatically created at startup:
 
-| Role | Email | Password |
-|---|---|---|
+| Role    | Email              | Password |
+|---------|--------------------|---|
 | Manager | `manager@test.com` | `1` |
 | Support | `support@test.com` | `2` |
-| Sales | `sales@test.com` | `3` |
+| Sales   | `sales@test.com`   | `3` |
+| Sales 2 | `sales2@test.com`  | `4` |
 
 > These accounts are intended for development and testing only. Do not use them in production.
 
