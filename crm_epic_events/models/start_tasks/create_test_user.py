@@ -39,7 +39,7 @@ def create_test_user(db: "Session"):
             password=bcrypt.hashpw(b"4", bcrypt.gensalt()).decode(),
             role=Roles.SALES,
             first_name="Test",
-            last_name="Sales",
+            last_name="Sales2",
         ),
     ]
 
