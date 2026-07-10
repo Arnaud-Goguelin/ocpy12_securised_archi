@@ -78,17 +78,21 @@ class EventController(BaseController):
 
         # Only signed contracts owned by the current salesperson
         all_contracts = ContractService.get_all_by_salesperson(self.user, self.db)
-        signed_contracts = [contract for contract in all_contracts if contract.status]
+        available_contracts = [contract for contract in all_contracts if contract.status and not contract.event]
 
-        if not signed_contracts:
-            print_error("No signed contracts found for your customers.")
+        if not available_contracts:
+            print_error("No signed contracts without event found for your customers.")
             return NavSignal.STAY
 
-        raw_contract, raw_data = self.view.prompt_create(signed_contracts)
+        raw_contract, raw_data = self.view.prompt_create(available_contracts)
         try:
-            contract = signed_contracts[int(raw_contract) - 1]
+            contract = available_contracts[int(raw_contract) - 1]
         except (ValueError, IndexError):
             print_error(f"Invalid selection: '{raw_contract}'")
+            return NavSignal.STAY
+
+        if contract.event:
+            print_error("This contract already has an event.")
             return NavSignal.STAY
 
         raw_data["contract_id"] = str(contract.id)
