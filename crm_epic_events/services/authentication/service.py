@@ -17,7 +17,7 @@ from crm_epic_events.errors import CustomInvalidCredentialsError, CustomInvalidT
 from crm_epic_events.models.user import User
 from crm_epic_events.utils import print_success
 
-from .schemas import AccessTokenPayload, RefreshTokenPayload
+from .schemas import TokenBase
 
 
 if TYPE_CHECKING:
@@ -41,24 +41,12 @@ class AuthTokensService:
         return Path.home() / ".config" / "crm_epic_events" / file_name
 
     @staticmethod
-    def generate_access_token(user: "User") -> str:
-        """Generates a signed short-lived JWT access token for the given user."""
+    def generate_token(user: "User", life_time: int) -> str:
+        """Generates a JWT access token for the given user, containing the user ID and expiration time."""
 
-        payload = AccessTokenPayload(
+        payload = TokenBase(
             id=user.id,
-            email=user.email,
-            role=user.role,
-            exp=datetime.now(UTC) + timedelta(minutes=Config.ACCESS_TOKEN_LIFETIME),
-        )
-        return encode(payload.model_dump(mode="json"), Config.SECRET_KEY, algorithm=Config.AUTH_ALGORITHM)
-
-    @staticmethod
-    def generate_refresh_token(user: "User") -> str:
-        """Generates a signed long-lived JWT refresh token for the given user."""
-
-        payload = RefreshTokenPayload(
-            id=user.id,
-            exp=datetime.now(UTC) + timedelta(days=Config.REFRESH_TOKEN_LIFETIME),
+            exp=datetime.now(UTC) + timedelta(minutes=life_time),
         )
         return encode(payload.model_dump(mode="json"), Config.SECRET_KEY, algorithm=Config.AUTH_ALGORITHM)
 
@@ -180,8 +168,8 @@ class AuthService:
         if not are_credentials_valid:
             raise CustomInvalidCredentialsError()
 
-        access_token = AuthTokensService.generate_access_token(user)
-        refresh_token = AuthTokensService.generate_refresh_token(user)
+        access_token = AuthTokensService.generate_token(user, Config.ACCESS_TOKEN_LIFETIME)
+        refresh_token = AuthTokensService.generate_token(user, Config.REFRESH_TOKEN_LIFETIME)
         AuthTokensService.save_tokens(access_token, refresh_token)
 
         return user
@@ -231,7 +219,7 @@ class AuthService:
         try:
             payload = decode(tokens["refresh_token"], Config.SECRET_KEY, algorithms=[Config.AUTH_ALGORITHM])
             user = User.get_by_id(payload["id"], db)
-            new_access_token = AuthTokensService.generate_access_token(user)
+            new_access_token = AuthTokensService.generate_token(user, Config.ACCESS_TOKEN_LIFETIME)
             AuthTokensService.save_tokens(new_access_token, tokens["refresh_token"])
             return user
         except NoResultFound:
