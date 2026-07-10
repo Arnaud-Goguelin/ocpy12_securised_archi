@@ -34,6 +34,13 @@ def create_test_user(db: "Session"):
             first_name="Test",
             last_name="Sales",
         ),
+        User(
+            email="sales2@test.com",
+            password=bcrypt.hashpw(b"4", bcrypt.gensalt()).decode(),
+            role=Roles.SALES,
+            first_name="Test",
+            last_name="Sales",
+        ),
     ]
 
     for user in test_users:
