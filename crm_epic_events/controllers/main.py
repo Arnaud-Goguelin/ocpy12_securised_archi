@@ -108,7 +108,7 @@ class MainController(BaseController):
             self.auth_error_count += 1
             if self.auth_error_count >= 3:
                 print_error("Too many failed login attempts. Please try again later.")
-                AuthTokensService.save_lockout(duration_seconds=30)
+                AuthTokensService.save_lockout(duration_seconds=15)
                 self.exit_app()
             print_error(error.message + f", remaining attemp(s): {3 - self.auth_error_count}")
 
