@@ -32,7 +32,7 @@ class CustomerController(BaseController):
         self.menu_items = [
             MenuItem(
                 "1",
-                "List all customers" if self.user.role == Roles.MANAGER else "List my customers",
+                "List all customers",
                 self.handle_list,
             ),
             MenuItem("2", "Create a customer", self.handle_create, [*Permissions.CUSTOMER_CREATE]),
