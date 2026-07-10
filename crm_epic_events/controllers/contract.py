@@ -72,9 +72,11 @@ class ContractController(BaseController):
     @require_roles(*Permissions.CONTRACT_CREATE)
     def handle_create(self) -> NavSignal:
         """
-        Prompts for a customer and financial details, then creates a new contract. Restricted to MANAGER only.
+        Prompts for a customer, a salesperson, and financial details, then creates a new contract.
+        Restricted to MANAGER only.
 
-        The salesperson is automatically inherited from the selected customer.
+        The salesperson is explicitly chosen by the Manager and may differ from the customer's
+        salesperson (e.g. if the customer's salesperson is unavailable).
 
         Raises:
             ValidationError: If the input does not pass Pydantic validation (e.g. remaining > total).
@@ -87,19 +89,21 @@ class ContractController(BaseController):
             print_error("No customers found. Please create a customer first.")
             return NavSignal.STAY
 
-        raw_customer, raw_salesperson, raw_data = self.view.prompt_create(customers, salespersons)
-
+        raw_customer = self.view.prompt_select_customer(customers)
         try:
             customer = customers[int(raw_customer) - 1]
         except (ValueError, IndexError):
             print_error(f"Invalid selection: '{raw_customer}'")
             return NavSignal.STAY
 
+        raw_salesperson = self.view.prompt_select_salesperson(salespersons, customer.salesperson_id)
         try:
             salesperson = salespersons[int(raw_salesperson) - 1]
         except (ValueError, IndexError):
             print_error(f"Invalid selection: '{raw_salesperson}'")
             return NavSignal.STAY
+
+        raw_data = self.view.prompt_create_details()
 
         try:
             data = ContractCreateInput(customer_id=customer.id, salesperson_id=salesperson.id, **raw_data)

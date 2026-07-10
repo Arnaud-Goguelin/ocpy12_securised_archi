@@ -1,3 +1,5 @@
+import uuid
+
 from typing import TYPE_CHECKING
 
 from crm_epic_events.utils import StandardInputs
@@ -14,29 +16,29 @@ class ContractView:
     # --- Prompts ---
 
     @staticmethod
-    def prompt_create(customers: list["Customer"], salepersons: list["User"]) -> tuple[str, str, dict]:
+    def prompt_select_customer(customers: list["Customer"]) -> str:
         print_title("Create new contract")
-
         for i, customer in enumerate(customers, start=1):
             print_option(str(i), f"{customer.first_name} {customer.last_name}  |  {customer.email}")
-        raw_customer = prompt("Select a customer").strip()
+        return prompt("Select a customer").strip()
 
+    @staticmethod
+    def prompt_select_salesperson(salepersons: list["User"], current_salesperson_id: "uuid.UUID") -> str:
         for i, saleperson in enumerate(salepersons, start=1):
-            print_option(str(i), f"{saleperson.first_name} {saleperson.last_name}  |  {saleperson.email}")
-        raw_saleperson = prompt("Select a salesperson").strip()
+            label = f"{saleperson.first_name} {saleperson.last_name}  |  {saleperson.email}"
+            if saleperson.id == current_salesperson_id:
+                label += "  ✦ current customer's salesperson"
+            print_option(str(i), label)
+        return prompt("Select a salesperson").strip()
 
-        return (
-            raw_customer,
-            raw_saleperson,
-            {
-                "total_amount": prompt("Total amount").strip(),
-                "remaining_amount": prompt("Remaining amount").strip(),
-                "status": prompt(f"Already signed? ({StandardInputs.VALIDATION}/{StandardInputs.CANCELLED})")
-                .strip()
-                .lower()
-                == StandardInputs.VALIDATION,
-            },
-        )
+    @staticmethod
+    def prompt_create_details() -> dict:
+        return {
+            "total_amount": prompt("Total amount").strip(),
+            "remaining_amount": prompt("Remaining amount").strip(),
+            "status": prompt(f"Already signed? ({StandardInputs.VALIDATION}/{StandardInputs.NEGATION})").strip().lower()
+            == StandardInputs.VALIDATION,
+        }
 
     @staticmethod
     def prompt_update(target: "Contract") -> dict:
