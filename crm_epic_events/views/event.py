@@ -5,7 +5,7 @@ from crm_epic_events.utils.printers import print_info, print_option, print_title
 
 
 if TYPE_CHECKING:
-    from crm_epic_events.models import Event
+    from crm_epic_events.models import Contract, Event, User
 
 
 class EventView:
@@ -18,7 +18,7 @@ class EventView:
         return prompt("Event ID").strip()
 
     @staticmethod
-    def prompt_create(contracts: list) -> tuple[str, dict]:
+    def prompt_select_contract(contracts: list["Contract"]) -> str:
         print_title("Create new event")
         for i, contract in enumerate(contracts, start=1):
             print_option(
@@ -26,8 +26,18 @@ class EventView:
                 f"Contract {str(contract.id)}"
                 f"  |  Customer: {contract.customer.first_name} {contract.customer.last_name}",
             )
-        raw_contract = prompt("Select a contract").strip()
-        return raw_contract, {
+        return prompt("Select a contract").strip()
+
+    @staticmethod
+    def prompt_select_support(supports: list["User"]) -> str:
+        for i, support in enumerate(supports, start=1):
+            label = f"{support.first_name} {support.last_name}  |  {support.email}"
+            print_option(str(i), label)
+        return prompt("Select a support").strip()
+
+    @staticmethod
+    def prompt_create_details() -> dict:
+        return {
             "start_date": prompt("Start date (YYYY-MM-DD)").strip(),
             "end_date": prompt("End date (YYYY-MM-DD)").strip(),
             "location": prompt("Location").strip(),
