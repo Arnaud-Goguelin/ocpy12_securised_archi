@@ -43,13 +43,14 @@ class ContractService:
         """
         Creates a new contract linked to the given customer. Restricted to MANAGER only.
 
-        The salesperson is automatically inherited from the customer, not taken from `data`.
+        The salesperson is explicitly chosen by the Manager and may differ from the customer's
+        salesperson (e.g. if the customer's salesperson is unavailable).
         """
 
         with db_transaction(db, "Creating contract"):
             return Contract.create(
                 customer_id=customer.id,
-                salesperson_id=customer.salesperson_id,
+                salesperson_id=data.salesperson_id,
                 total_amount=data.total_amount,
                 remaining_amount=data.remaining_amount,
                 status=data.status,
