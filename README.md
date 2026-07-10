@@ -27,6 +27,66 @@ The database schema is available as a class diagram:
 
 > The `.drawio` file can be viewed directly on GitHub or opened with [draw.io](https://app.diagrams.net/).
 
+Here is a representation with Mermaid.
+
+```mermaid
+erDiagram
+    User {
+        uuid id PK
+        string first_name
+        string last_name
+        string email
+        string password
+        string role
+    }
+
+    Company {
+        string vat_number PK
+        string name
+    }
+
+    Customer {
+        uuid id PK
+        string first_name
+        string last_name
+        string email
+        string phone
+        string company_vat FK
+        uuid salesperson_id FK
+        datetime created_at
+        datetime last_updated_at
+    }
+
+    Contract {
+        uuid id PK
+        uuid customer_id FK
+        uuid salesperson_id FK
+        decimal total_amount
+        decimal remaining_amount
+        datetime created_at
+        bool status
+    }
+
+    Event {
+        uuid id PK
+        uuid contract_id FK
+        uuid customer_id FK
+        uuid support_id FK
+        datetime start_date
+        datetime end_date
+        string location
+        int attendees
+        string notes
+    }
+
+    Company ||--o{ Customer : "has"
+    User ||--o{ Customer : "salesperson"
+    User ||--o{ Contract : "salesperson"
+    User ||--o{ Event : "support"
+    Customer ||--o{ Contract : "has"
+    Customer ||--o{ Event : "has"
+    Contract ||--o| Event : "has"
+```
 
 ## Running Locally
 Prerequisites
