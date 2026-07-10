@@ -41,12 +41,14 @@ class AuthTokensService:
         return Path.home() / ".config" / "crm_epic_events" / file_name
 
     @staticmethod
-    def generate_token(user: "User", life_time: int) -> str:
+    def generate_token(user: "User", life_time: int, used_as_refresh_token: bool = False) -> str:
         """Generates a JWT access token for the given user, containing the user ID and expiration time."""
+
+        delta = timedelta(minutes=life_time) if not used_as_refresh_token else timedelta(days=life_time)
 
         payload = TokenBase(
             id=user.id,
-            exp=datetime.now(UTC) + timedelta(minutes=life_time),
+            exp=datetime.now(UTC) + delta,
         )
         return encode(payload.model_dump(mode="json"), Config.SECRET_KEY, algorithm=Config.AUTH_ALGORITHM)
 
@@ -169,7 +171,11 @@ class AuthService:
             raise CustomInvalidCredentialsError()
 
         access_token = AuthTokensService.generate_token(user, Config.ACCESS_TOKEN_LIFETIME)
-        refresh_token = AuthTokensService.generate_token(user, Config.REFRESH_TOKEN_LIFETIME)
+        refresh_token = AuthTokensService.generate_token(
+            user,
+            Config.REFRESH_TOKEN_LIFETIME,
+            used_as_refresh_token=True,
+        )
         AuthTokensService.save_tokens(access_token, refresh_token)
 
         return user
