@@ -27,11 +27,7 @@ class ContractController(BaseController):
         self.user = user
         self.view = ContractView()
         self.menu_items = [
-            MenuItem(
-                "1",
-                "List my contracts" if self.user.role == Roles.SALES else "List all contracts",
-                self.handle_list,
-            ),
+            MenuItem("1", "List all contracts", self.handle_list),
             MenuItem("2", "List unsigned contracts", self.handle_list_unsigned),
             MenuItem("3", "List unpaid contracts", self.handle_list_unpaid),
             MenuItem("4", "Create a contract", self.handle_create, [*Permissions.CONTRACT_CREATE]),

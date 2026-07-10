@@ -10,6 +10,7 @@ from crm_epic_events.errors import (
     UserNotAllowedError,
 )
 from crm_epic_events.permissions import Roles
+from crm_epic_events.services import UserService
 from crm_epic_events.services.contract.service import ContractService
 from crm_epic_events.services.event.service import EventService
 from crm_epic_events.utils.constants import NavSignal, StandardInputs
@@ -33,25 +34,26 @@ class TestHandleList:
 
 
 class TestHandleCreate:
-    def test_sales_can_create(self, mock_db, salesperson, signed_contract):
+    def test_sales_can_create(self, mock_db, salesperson, signed_contract, support):
         ctrl = EventController(mock_db, salesperson)
         signed_contract.salesperson_id = salesperson.id
+        signed_contract.event = None
         event = EventFactory()
-        ctrl.view.prompt_create = MagicMock(
-            return_value=(
-                "1",
-                {
-                    "start_date": "2025-06-01 10:00",
-                    "end_date": "2025-06-02 10:00",
-                    "location": "Paris",
-                    "attendees": "50",
-                    "notes": None,
-                },
-            )
+
+        ctrl.view.prompt_select_contract = MagicMock(return_value="1")
+        ctrl.view.prompt_select_support = MagicMock(return_value="1")
+        ctrl.view.prompt_create_details = MagicMock(
+            return_value={
+                "start_date": "2025-06-01 10:00",
+                "end_date": "2025-06-02 10:00",
+                "location": "Paris",
+                "attendees": "50",
+            }
         )
 
         with (
             patch.object(ContractService, "get_all_by_salesperson", return_value=[signed_contract]),
+            patch.object(UserService, "get_all_by_role", return_value=[support]),
             patch.object(EventService, "create", return_value=event),
         ):
             signal = ctrl.handle_create()
@@ -85,60 +87,90 @@ class TestHandleCreate:
 
         assert signal == NavSignal.STAY
 
-    def test_contract_not_found_returns_stay(self, mock_db, salesperson, signed_contract):
+    def test_contract_with_existing_event_filtered_out(self, mock_db, salesperson, signed_contract, event):
         ctrl = EventController(mock_db, salesperson)
         signed_contract.salesperson_id = salesperson.id
-        ctrl.view.prompt_create = MagicMock(
-            return_value=(
-                "1",
-                {
-                    "start_date": "2025-06-01 10:00",
-                    "end_date": "2025-06-02 10:00",
-                    "location": "Paris",
-                    "attendees": "50",
-                    "notes": None,
-                },
-            )
+        signed_contract.event = event  # contract already has an event
+
+        with patch.object(ContractService, "get_all_by_salesperson", return_value=[signed_contract]):
+            signal = ctrl.handle_create()
+
+        assert signal == NavSignal.STAY
+
+    def test_invalid_contract_selection_returns_stay(self, mock_db, salesperson, signed_contract):
+        ctrl = EventController(mock_db, salesperson)
+        signed_contract.salesperson_id = salesperson.id
+        signed_contract.event = None
+
+        ctrl.view.prompt_select_contract = MagicMock(return_value="invalid")
+
+        with patch.object(ContractService, "get_all_by_salesperson", return_value=[signed_contract]):
+            signal = ctrl.handle_create()
+
+        assert signal == NavSignal.STAY
+
+    def test_invalid_support_selection_returns_stay(self, mock_db, salesperson, signed_contract, support):
+        ctrl = EventController(mock_db, salesperson)
+        signed_contract.salesperson_id = salesperson.id
+        signed_contract.event = None
+
+        ctrl.view.prompt_select_contract = MagicMock(return_value="1")
+        ctrl.view.prompt_select_support = MagicMock(return_value="invalid")
+
+        with (
+            patch.object(ContractService, "get_all_by_salesperson", return_value=[signed_contract]),
+            patch.object(UserService, "get_all_by_role", return_value=[support]),
+        ):
+            signal = ctrl.handle_create()
+
+        assert signal == NavSignal.STAY
+
+    def test_contract_not_found_error_returns_stay(self, mock_db, salesperson, signed_contract, support):
+        ctrl = EventController(mock_db, salesperson)
+        signed_contract.salesperson_id = salesperson.id
+        signed_contract.event = None
+
+        ctrl.view.prompt_select_contract = MagicMock(return_value="1")
+        ctrl.view.prompt_select_support = MagicMock(return_value="1")
+        ctrl.view.prompt_create_details = MagicMock(
+            return_value={
+                "start_date": "2025-06-01 10:00",
+                "end_date": "2025-06-02 10:00",
+                "location": "Paris",
+                "attendees": "50",
+            }
         )
 
         with (
             patch.object(ContractService, "get_all_by_salesperson", return_value=[signed_contract]),
+            patch.object(UserService, "get_all_by_role", return_value=[support]),
             patch.object(EventService, "create", side_effect=ContractNotFoundError()),
         ):
             signal = ctrl.handle_create()
 
         assert signal == NavSignal.STAY
 
-    def test_unsigned_contract_error_returns_stay(self, mock_db, salesperson, unsigned_contract):
+    def test_contract_not_signed_error_returns_stay(self, mock_db, salesperson, signed_contract, support):
         ctrl = EventController(mock_db, salesperson)
-        unsigned_contract.salesperson_id = salesperson.id
-        ctrl.view.prompt_create = MagicMock(
-            return_value=(
-                "1",
-                {
-                    "start_date": "2025-06-01 10:00",
-                    "end_date": "2025-06-02 10:00",
-                    "location": "Paris",
-                    "attendees": "50",
-                    "notes": None,
-                },
-            )
+        signed_contract.salesperson_id = salesperson.id
+        signed_contract.event = None
+
+        ctrl.view.prompt_select_contract = MagicMock(return_value="1")
+        ctrl.view.prompt_select_support = MagicMock(return_value="1")
+        ctrl.view.prompt_create_details = MagicMock(
+            return_value={
+                "start_date": "2025-06-01 10:00",
+                "end_date": "2025-06-02 10:00",
+                "location": "Paris",
+                "attendees": "50",
+            }
         )
 
         with (
-            patch.object(ContractService, "get_all_by_salesperson", return_value=[unsigned_contract]),
+            patch.object(ContractService, "get_all_by_salesperson", return_value=[signed_contract]),
+            patch.object(UserService, "get_all_by_role", return_value=[support]),
             patch.object(EventService, "create", side_effect=ContractNotSignedError()),
         ):
-            signal = ctrl.handle_create()
-
-        assert signal == NavSignal.STAY
-
-    def test_invalid_selection_returns_stay(self, mock_db, salesperson, signed_contract):
-        ctrl = EventController(mock_db, salesperson)
-        signed_contract.salesperson_id = salesperson.id
-        ctrl.view.prompt_create = MagicMock(return_value=("invalid", {}))
-
-        with patch.object(ContractService, "get_all_by_salesperson", return_value=[signed_contract]):
             signal = ctrl.handle_create()
 
         assert signal == NavSignal.STAY

@@ -97,26 +97,26 @@ uv (optional, for running outside Docker)
 1. Environment Variables
 Copy the template below into a .env file at the project root and fill in the values:
 ```bash
-  APP_ENV=
-    # PostgreSQL database URL - filled with default values to match the docker compose config
-    DB_NAME=crm_db
-    POSTGRES_USER=docker_crm_db_user
-    POSTGRES_PASSWORD=crm_db_password
-    #local DB
-    #DB_HOST=
-    #DB_PORT=
-    #docker DB
-    DB_HOST=crm_db
-    DB_PORT=5432
-    
-    # Auth env variables
-    SECRET_KEY=
-    AUTH_ALGORITHM=
-    ACCESS_TOKEN_LIFETIME=
-    REFRESH_TOKEN_LIFETIME=
-    
-    # Sentry env variables - optional
-    SENTRY_DSN=
+APP_ENV=
+# PostgreSQL database URL - filled with default values to match the docker compose config
+DB_NAME=crm_db
+POSTGRES_USER=docker_crm_db_user
+POSTGRES_PASSWORD=crm_db_password
+#local DB
+#DB_HOST=
+#DB_PORT=
+#docker DB
+DB_HOST=crm_db
+DB_PORT=5432
+
+# Auth env variables - filled with default value for test
+SECRET_KEY=default_secret_key
+AUTH_ALGORITHM=H256
+ACCESS_TOKEN_LIFETIME=10
+REFRESH_TOKEN_LIFETIME=1
+
+# Sentry env variables - optional
+SENTRY_DSN=
 ```
 
 For a quick local setup with Docker, 
@@ -124,6 +124,15 @@ the values in compose.local.yml are pre-configured and ready to use —
 you only need to set the auth and optional Sentry variables.
 
 2. With Docker + just (recommended)
+
+/!\ Be careful, justfile in this project is configured for Windows OS. 
+<br>Comment out the following line to make it work on other OS.
+```
+# Windows shell fix
+set shell := ["cmd", "/c"]
+```
+
+Here are the commands to run the app:
 ```bash
 # Build and start containers (PostgreSQL + app)
 just up

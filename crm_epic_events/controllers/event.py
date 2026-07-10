@@ -9,7 +9,7 @@ from crm_epic_events.errors import (
     UserIsNotOwnerError,
 )
 from crm_epic_events.permissions import Permissions, Roles, require_roles
-from crm_epic_events.services import ContractService, EventService
+from crm_epic_events.services import ContractService, EventService, UserService
 from crm_epic_events.services.event.schemas import EventCreateInput, EventUpdateInput
 from crm_epic_events.utils import check_choice
 from crm_epic_events.utils.constants import MenuItem, NavSignal, StandardInputs
@@ -78,24 +78,40 @@ class EventController(BaseController):
 
         # Only signed contracts owned by the current salesperson
         all_contracts = ContractService.get_all_by_salesperson(self.user, self.db)
-        signed_contracts = [contract for contract in all_contracts if contract.status]
+        available_contracts = [contract for contract in all_contracts if contract.status and not contract.event]
 
-        if not signed_contracts:
-            print_error("No signed contracts found for your customers.")
+        if not available_contracts:
+            print_error("No signed contracts without event found for your customers.")
             return NavSignal.STAY
 
-        raw_contract, raw_data = self.view.prompt_create(signed_contracts)
+        raw_contract = self.view.prompt_select_contract(available_contracts)
+
         try:
-            contract = signed_contracts[int(raw_contract) - 1]
+            contract = available_contracts[int(raw_contract) - 1]
         except (ValueError, IndexError):
             print_error(f"Invalid selection: '{raw_contract}'")
             return NavSignal.STAY
 
-        raw_data["contract_id"] = str(contract.id)
-        raw_data["customer_id"] = str(contract.customer_id)
+        if contract.event:
+            print_error("This contract already has an event.")
+            return NavSignal.STAY
+
+        all_supports = UserService.get_all_by_role(Roles.SUPPORT, self.db)
+        raw_support = self.view.prompt_select_support(all_supports)
 
         try:
-            data = EventCreateInput(**raw_data)
+            support = all_supports[int(raw_support) - 1]
+        except (ValueError, IndexError):
+            print_error(f"Invalid selection: '{raw_support}'")
+            return NavSignal.STAY
+
+        raw_details = self.view.prompt_create_details()
+        raw_details["contract_id"] = str(contract.id)
+        raw_details["customer_id"] = str(contract.customer_id)
+        raw_details["support_id"] = str(support.id)
+
+        try:
+            data = EventCreateInput(**raw_details)
             event = EventService.create(data, self.db)
             print_success(f"Event '{event.id}' created successfully.")
         except ValidationError as error:

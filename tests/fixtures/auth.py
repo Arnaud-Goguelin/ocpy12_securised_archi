@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
+from crm_epic_events.config import Config
 from crm_epic_events.services.authentication.service import AuthTokensService
 
 
@@ -11,7 +12,7 @@ def access_token():
     def _make(user, expired: bool = False) -> str:
         with patch("crm_epic_events.services.authentication.service.datetime") as mock_dt:
             mock_dt.now.return_value = datetime(2025, 1, 1, tzinfo=UTC) if expired else datetime.now(UTC)
-            token = AuthTokensService.generate_access_token(user)
+            token = AuthTokensService.generate_token(user, Config.ACCESS_TOKEN_LIFETIME)
             return token
 
     return _make
@@ -22,7 +23,7 @@ def refresh_token():
     def _make(user, expired: bool = False) -> str:
         with patch("crm_epic_events.services.authentication.service.datetime") as mock_dt:
             mock_dt.now.return_value = datetime(2025, 1, 1, tzinfo=UTC) if expired else datetime.now(UTC)
-            token = AuthTokensService.generate_refresh_token(user)
+            token = AuthTokensService.generate_token(user, Config.REFRESH_TOKEN_LIFETIME, used_as_refresh_token=True)
             return token
 
     return _make
